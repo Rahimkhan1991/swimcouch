@@ -127,32 +127,32 @@
   </div>
 
   <script>
-    function updateDashboardSummary() {
-      const students = JSON.parse(localStorage.getItem('students') || '[]');
-      const fees = JSON.parse(localStorage.getItem('feeRecords') || '[]');
+    ///function updateDashboardSummary() {
+      //const students = JSON.parse(localStorage.getItem('students') || '[]');
+      //const fees = JSON.parse(localStorage.getItem('feeRecords') || '[]');
 
-      let totalStudents = students.length;
-      let totalCollected = 0;
-      let pendingFee = 0;
+      //let totalStudents = students.length;
+      //let totalCollected = 0;
+      //let pendingFee = 0;
 
-      students.forEach(student => {
-        const initial = parseFloat(student.initialPayment) || 0;
-        const totalFee = parseFloat(student.totalFee) || 0;
+      ///students.forEach(student => {
+        ///const initial = parseFloat(student.initialPayment) || 0;
+        ///const totalFee = parseFloat(student.totalFee) || 0;
 
-        const feeSum = fees
-          .filter(f => f.studentId === student.id)
-          .reduce((sum, f) => sum + (parseFloat(f.amount) || 0), 0);
+        ///const feeSum = fees
+         /// .filter(f => f.studentId === student.id)
+          ///.reduce((sum, f) => sum + (parseFloat(f.amount) || 0), 0);
 
-        const paid = initial + feeSum;
-        const pending = Math.max(totalFee - paid, 0);
+        //const paid = initial + feeSum;
+        //const pending = Math.max(totalFee - paid, 0);
 
-        totalCollected += paid;
-        pendingFee += pending;
+        //totalCollected += paid;
+        //pendingFee += pending;
       });
 
-      document.getElementById('totalStudentsCard').textContent = totalStudents;
-      document.getElementById('totalCollectedCard').textContent = `₹${totalCollected}`;
-      document.getElementById('totalPendingCard').textContent = `₹${pendingFee}`;
+      //document.getElementById('totalStudentsCard').textContent = totalStudents;
+      //document.getElementById('totalCollectedCard').textContent = `₹${totalCollected}`;
+      ///document.getElementById('totalPendingCard').textContent = `₹${pendingFee}`;
     }
 
     function confirmDataReset() {

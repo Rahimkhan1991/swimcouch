@@ -3,164 +3,186 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Reports</title>
+  <title>Student Report</title>
   <style>
     body {
-      font-family: 'Arial', sans-serif;
-      background-color: #f0f4f8;
+      font-family: Arial, sans-serif;
+      padding: 16px;
       margin: 0;
-      padding: 20px;
+      background: #f4f4f4;
     }
 
     h2 {
-      color: #007bff;
-      margin-top: 30px;
-      margin-bottom: 10px;
-    }
-
-    .section {
-      margin-bottom: 40px;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      background: #fff;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-    }
-
-    th, td {
-      padding: 10px;
-      border: 1px solid #ddd;
-      font-size: 14px;
       text-align: center;
+      color: #007bff;
     }
 
-    th {
-      background-color: #007bff;
-      color: white;
-      position: sticky;
-      top: 0;
-    }
-
-    tr:nth-child(even) {
-      background-color: #f9f9f9;
-    }
-
-    .back-btn {
-      display: inline-block;
+    .card {
+      background: #fff;
+      padding: 16px;
+      border-radius: 10px;
+      box-shadow: 0 0 6px rgba(0,0,0,0.1);
       margin-bottom: 20px;
-      padding: 8px 16px;
-      background: #28a745;
+    }
+
+    select {
+      width: 100%;
+      padding: 10px;
+      font-size: 16px;
+      margin-bottom: 15px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+    }
+
+    .tabs {
+      display: flex;
+      margin-bottom: 16px;
+    }
+
+    .tab {
+      flex: 1;
+      padding: 10px;
+      text-align: center;
+      background: #ddd;
+      border-radius: 10px 10px 0 0;
+      cursor: pointer;
+    }
+
+    .tab.active {
+      background: #007bff;
       color: white;
-      text-decoration: none;
-      border-radius: 5px;
+    }
+
+    .content {
+      border: 1px solid #ddd;
+      border-radius: 0 0 10px 10px;
+      padding: 12px;
+      background: white;
+    }
+
+    .entry {
+      margin-bottom: 8px;
+      border-bottom: 1px solid #eee;
+      padding-bottom: 6px;
+    }
+
+    .label {
+      font-weight: bold;
+      color: #333;
     }
 
     @media (max-width: 600px) {
-      body {
-        padding: 10px;
-      }
-
-      th, td {
-        font-size: 12px;
-        padding: 8px;
-      }
-
-      h2 {
-        font-size: 18px;
-      }
+      h2 { font-size: 20px; }
+      .tab { font-size: 14px; padding: 8px; }
     }
   </style>
 </head>
 <body>
-  <a href="index.html" class="back-btn">← Back</a>
+  <h2>Student Report</h2>
 
-  <!-- Attendance Report Section -->
-  <div class="section">
-    <h2>📅 Attendance Report</h2>
-    <div class="table-container">
-      <table id="attendanceTable">
-        <thead>
-          <tr>
-            <th>Date</th>
-            <th>Student Name</th>
-            <th>Assigned Day</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
+  <div class="card">
+    <select id="studentSelect">
+      <option value="">Select a student</option>
+    </select>
+
+    <div class="tabs">
+      <div class="tab active" id="attendanceTab">Attendance</div>
+      <div class="tab" id="paymentTab">Payment</div>
     </div>
-  </div>
 
-  <!-- Financial Report Section -->
-  <div class="section">
-    <h2>💰 Financial Report</h2>
-    <div class="table-container">
-      <table id="financialTable">
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>Total Fee</th>
-            <th>Paid</th>
-            <th>Pending</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
+    <div class="content" id="reportContent">
+      <p>Select a student to view their report.</p>
     </div>
   </div>
 
   <script>
-    const students = JSON.parse(localStorage.getItem("students")) || [];
-    const attendance = JSON.parse(localStorage.getItem("attendance")) || {};
+    const studentSelect = document.getElementById('studentSelect');
+    const attendanceTab = document.getElementById('attendanceTab');
+    const paymentTab = document.getElementById('paymentTab');
+    const reportContent = document.getElementById('reportContent');
 
-    // ----------- Populate Attendance Table -------------
-    function populateAttendance() {
-      const tbody = document.querySelector("#attendanceTable tbody");
-      tbody.innerHTML = '';
+    const students = JSON.parse(localStorage.getItem('students')) || [];
+    const attendance = JSON.parse(localStorage.getItem('attendance')) || {};
+    const payments = JSON.parse(localStorage.getItem('payments')) || {};
 
-      const sortedDates = Object.keys(attendance).sort((a, b) => new Date(b) - new Date(a));
+    // Populate dropdown
+    students.forEach(student => {
+      const opt = document.createElement('option');
+      opt.value = student.id;
+      opt.textContent = student.name + " (" + student.phone + ")";
+      studentSelect.appendChild(opt);
+    });
 
-      sortedDates.forEach(date => {
-        attendance[date].forEach(studentId => {
-          const student = students.find(s => s.id === studentId);
-          if (!student) return;
+    let currentTab = "attendance";
 
-          const tr = document.createElement("tr");
-          tr.innerHTML = `
-            <td>${date}</td>
-            <td>${student.name || '-'}</td>
-            <td>${student.day || '-'}</td>
-          `;
-          tbody.appendChild(tr);
-        });
-      });
+    attendanceTab.onclick = () => {
+      currentTab = "attendance";
+      attendanceTab.classList.add('active');
+      paymentTab.classList.remove('active');
+      showReport();
+    };
+
+    paymentTab.onclick = () => {
+      currentTab = "payment";
+      paymentTab.classList.remove('active');
+      attendanceTab.classList.remove('active');
+      paymentTab.classList.add('active');
+      showReport();
+    };
+
+    studentSelect.onchange = () => {
+      showReport();
+    };
+
+    function showReport() {
+      const studentId = studentSelect.value;
+      if (!studentId) {
+        reportContent.innerHTML = `<p>Please select a student to see details.</p>`;
+        return;
+      }
+
+      const student = students.find(s => s.id === studentId);
+      if (!student) return;
+
+      if (currentTab === "attendance") {
+        const studentAttendance = attendance[studentId] || {};
+        let content = `<h3>Attendance History</h3>`;
+        const dates = Object.keys(studentAttendance).sort();
+
+        if (dates.length === 0) {
+          content += `<p>No attendance records found.</p>`;
+        } else {
+          dates.forEach(date => {
+            content += `<div class="entry"><span class="label">${date}:</span> ${studentAttendance[date]}</div>`;
+          });
+        }
+
+        reportContent.innerHTML = content;
+      }
+
+      if (currentTab === "payment") {
+        const studentPayments = payments[studentId] || [];
+        let totalPaid = 0;
+        let content = `<h3>Payment History</h3>`;
+
+        if (studentPayments.length === 0) {
+          content += `<p>No payments found.</p>`;
+        } else {
+          studentPayments.forEach(entry => {
+            totalPaid += parseFloat(entry.amount);
+            content += `<div class="entry"><span class="label">${entry.date}:</span> Paid ₹${entry.amount}</div>`;
+          });
+        }
+
+        const balance = student.totalFee ? (student.totalFee - totalPaid) : "N/A";
+
+        content += `<hr/><div><span class="label">Total Fee:</span> ₹${student.totalFee || "Not Set"}</div>`;
+        content += `<div><span class="label">Total Paid:</span> ₹${totalPaid}</div>`;
+        content += `<div><span class="label">Pending Balance:</span> ₹${balance}</div>`;
+
+        reportContent.innerHTML = content;
+      }
     }
-
-    // ----------- Populate Financial Table -------------
-    function populateFinance() {
-      const tbody = document.querySelector("#financialTable tbody");
-      tbody.innerHTML = '';
-
-      students.forEach(student => {
-        const tr = document.createElement("tr");
-        const total = parseFloat(student.totalFee || 0);
-        const paid = parseFloat(student.initialPayment || 0);
-        const pending = total - paid;
-
-        tr.innerHTML = `
-          <td>${student.name}</td>
-          <td>${total}</td>
-          <td>${paid}</td>
-          <td style="color: ${pending > 0 ? 'red' : 'green'}">${pending}</td>
-        `;
-        tbody.appendChild(tr);
-      });
-    }
-
-    populateAttendance();
-    populateFinance();
   </script>
 </body>
 </html>

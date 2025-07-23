@@ -237,7 +237,7 @@
     loadStudents();
   </script>
 <script>
-  function saveAttendance() {
+ function saveAttendance() {
   const date = document.getElementById('attendanceDate').value;
   const checkboxes = document.querySelectorAll('.mark-present');
   
@@ -247,15 +247,23 @@
   // Remove existing entries for this date
   attendance = attendance.filter(item => item.date !== date);
   
+  // Get all students for name lookup
+  const allStudents = JSON.parse(localStorage.getItem('students')) || [];
+  
   // Add new entries
   checkboxes.forEach(checkbox => {
     if (checkbox.checked) {
+      const studentId = checkbox.dataset.id;
+      // Find student to get their name
+      const student = allStudents.find(s => s.id === studentId);
+      const studentName = student ? student.name : 'Unknown';
+      
       attendance.push({
         date: date,
-        studentId: checkbox.dataset.id,
-        studentName: checkbox.dataset.name, // Add student name for easier reporting
+        studentId: studentId,
+        studentName: studentName, // Add student name
         status: 'Present',
-        timestamp: new Date().toISOString() // Add timestamp for sorting
+        timestamp: new Date().toISOString()
       });
     }
   });

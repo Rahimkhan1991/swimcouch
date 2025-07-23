@@ -239,35 +239,61 @@
     };
   </script>
   <script>
-  function showAttendanceHistory() {
+ function showAttendanceHistory() {
   const selectedStudentName = document.getElementById("studentDropdown").value;
-  if (!selectedStudentName) return;
+  if (!selectedStudentName) {
+    document.getElementById("attendanceResult").innerHTML = "";
+    return;
+  }
 
   // Get ALL attendance records
   const allAttendance = JSON.parse(localStorage.getItem("attendance")) || [];
   
-  // Find the student to get their ID
+  // Find the student in students list
   const students = JSON.parse(localStorage.getItem("students")) || [];
   const student = students.find(s => s.name === selectedStudentName);
   
-  if (!student) return;
+  if (!student) {
+    document.getElementById("attendanceResult").innerHTML = "<p>Student not found</p>";
+    return;
+  }
 
-  // Filter attendance by student ID OR name (for backward compatibility)
+  // Filter attendance by student ID AND name (double check)
   const studentAttendance = allAttendance.filter(a => 
-    a.studentId === student.id || a.studentName === student.name
-  );
+    (a.studentId && a.studentId === student.id) || 
+    (a.studentName && a.studentName === student.name)
+  ).sort((a, b) => new Date(b.date) - new Date(a.date)); // Sort by date newest first
 
-  // Display the records
-  let html = `<div class="student-info">
-    <h3>${student.name}'s Attendance</h3>
-    <p>Total Classes Attended: ${studentAttendance.length}</p>
-    <ul>`;
+  // Build student info HTML
+  let html = `<div style="background: #f0f9ff; padding: 10px; margin-bottom: 15px; border-radius: 8px;">
+    <strong>Student Details:</strong><br>`;
   
-  studentAttendance.forEach(record => {
-    html += `<li>${formatDate(record.date)} - ${record.status}</li>`;
-  });
-  
-  html += `</ul></div>`;
+  if (student.image) {
+    html += `<img src="${student.image}" alt="${student.name}" style="width: 50px; height: 50px; border-radius: 50%; margin-right: 10px;">`;
+  }
+
+  const total = parseInt(student.totalFee || 0);
+  const paid = parseInt(student.paidAmount || 0);
+  const balance = total - paid;
+
+  html += `Name: ${student.name}<br>
+    Phone: ${student.phone || 'N/A'}<br>
+    Days: ${student.days ? student.days.join(', ') : student.day || 'N/A'}<br>
+    Total Fee: Rp${total}<br>
+    Paid: Rp${paid}<br>
+    Balance: Rp${balance}</div>`;
+
+  // Build attendance history HTML
+  if (studentAttendance.length > 0) {
+    html += "<h4>Attendance History:</h4><ul style='padding-left: 20px;'>";
+    studentAttendance.forEach(a => {
+      html += `<li>${formatDate(a.date)} - ${a.status}</li>`;
+    });
+    html += `</ul><p>Total attended: ${studentAttendance.length} sessions</p>`;
+  } else {
+    html += "<p>No attendance records found for this student.</p>";
+  }
+
   document.getElementById("attendanceResult").innerHTML = html;
 }
 

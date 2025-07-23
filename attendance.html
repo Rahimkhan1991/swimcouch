@@ -1,154 +1,151 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Mark Attendance</title>
+  <meta charset="UTF-8">
+  <title>Attendance</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
     body {
       font-family: Arial, sans-serif;
-      padding: 15px;
-      background-color: #f9f9f9;
+      padding: 10px;
+      background-color: #f0f2f5;
+      margin: 0;
     }
+
     h2 {
       color: #007bff;
       text-align: center;
     }
+
     .top-bar {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      flex-wrap: wrap;
       margin-bottom: 15px;
     }
-    select, input[type="date"], button {
-      padding: 10px;
-      margin: 5px 0;
-      width: 100%;
-      max-width: 100%;
-      font-size: 16px;
+
+    .top-bar button {
+      padding: 6px 12px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 6px;
     }
-    .student-list {
-      margin-top: 10px;
-    }
-    .student-item {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      background: white;
-      margin-bottom: 8px;
-      padding: 12px;
-      border-radius: 8px;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
-    }
-    .bottom-buttons {
-      margin-top: 20px;
+
+    #studentList {
       display: flex;
       flex-direction: column;
       gap: 10px;
     }
-    .back-btn {
-      background-color: #6c757d;
-      color: white;
+
+    .student-card {
+      background: white;
+      border-radius: 10px;
+      padding: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
     }
-    .submit-btn {
-      background-color: #28a745;
-      color: white;
+
+    label {
+      flex: 1;
     }
-    .mark-all-btn {
-      background-color: #007bff;
-      color: white;
+
+    input[type="checkbox"] {
+      transform: scale(1.5);
     }
-    button {
+
+    .footer-buttons {
+      margin-top: 20px;
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .footer-buttons button {
+      flex: 1;
+      padding: 12px;
+      font-size: 16px;
+      background-color: green;
+      color: white;
       border: none;
-      border-radius: 6px;
-      cursor: pointer;
+      border-radius: 10px;
     }
-    @media (min-width: 600px) {
-      select, input[type="date"], button {
-        max-width: 250px;
-      }
+
+    #attendanceDate {
+      padding: 8px;
+      font-size: 16px;
+      width: 100%;
+      margin: 10px 0;
+      border-radius: 8px;
+      border: 1px solid #ccc;
     }
   </style>
 </head>
 <body>
 
-  <h2>Mark Attendance</h2>
-
   <div class="top-bar">
-    <select id="dayFilter">
-      <option value="">-- Select Day --</option>
-      <option value="Monday">Monday</option>
-      <option value="Tuesday">Tuesday</option>
-      <option value="Wednesday">Wednesday</option>
-      <option value="Thursday">Thursday</option>
-      <option value="Friday">Friday</option>
-      <option value="Saturday">Saturday</option>
-      <option value="Sunday">Sunday</option>
-    </select>
-    <input type="date" id="attendanceDate" />
+    <button onclick="history.back()">← Back</button>
+    <h2>Attendance</h2>
   </div>
 
-  <div class="student-list" id="studentList"></div>
+  <label for="attendanceDate"><strong>Select Date:</strong></label>
+  <input type="date" id="attendanceDate">
 
-  <div class="bottom-buttons">
-    <button class="mark-all-btn" id="markAllBtn">Mark All Present</button>
-    <button class="submit-btn" id="submitAttendanceBtn">Submit Attendance</button>
-    <button class="back-btn" onclick="window.location.href='index.html'">Back</button>
+  <div id="studentList"></div>
+
+  <div class="footer-buttons">
+    <button style="background-color:#28a745;" onclick="markAllPresent()">Mark All Present</button>
+    <button style="background-color:#007bff;" onclick="submitAttendance()">Submit Attendance</button>
   </div>
 
   <script>
-    const studentListEl = document.getElementById('studentList');
-    const dayFilter = document.getElementById('dayFilter');
-    const attendanceDate = document.getElementById('attendanceDate');
-    const attendanceBtn = document.getElementById('submitAttendanceBtn');
+    const studentListContainer = document.getElementById('studentList');
+    const students = JSON.parse(localStorage.getItem('students')) || [];
 
-    function loadStudentsForDay(day) {
-      const students = JSON.parse(localStorage.getItem('students') || '[]');
-      const filtered = day ? students.filter(s => s.day === day) : students;
-
-      studentListEl.innerHTML = '';
-      filtered.forEach(student => {
+    function loadStudents() {
+      studentListContainer.innerHTML = '';
+      students.forEach(student => {
         const div = document.createElement('div');
-        div.className = 'student-item';
+        div.className = 'student-card';
+
         div.innerHTML = `
-          <span>${student.name}</span>
-          <input type="checkbox" class="student-checkbox" data-id="${student.id}" />
+          <label for="student_${student.id}">
+            ${student.name} (${student.assignedDay || 'N/A'})
+          </label>
+          <input type="checkbox" id="student_${student.id}" data-id="${student.id}" class="student-checkbox">
         `;
-        studentListEl.appendChild(div);
+        studentListContainer.appendChild(div);
       });
     }
 
-    dayFilter.addEventListener('change', () => {
-      loadStudentsForDay(dayFilter.value);
-    });
-
-    document.getElementById('markAllBtn').addEventListener('click', () => {
+    function markAllPresent() {
       document.querySelectorAll('.student-checkbox').forEach(cb => cb.checked = true);
-    });
+    }
 
-    attendanceBtn.addEventListener('click', () => {
-      const date = attendanceDate.value;
+    function submitAttendance() {
+      const date = document.getElementById('attendanceDate').value;
       if (!date) {
-        alert('Please select a date');
+        alert("Please select a date.");
         return;
       }
 
-      const checkboxes = document.querySelectorAll('.student-checkbox');
-      const attendance = {};
-      checkboxes.forEach(cb => {
-        attendance[cb.dataset.id] = cb.checked;
+      const attendance = JSON.parse(localStorage.getItem('attendanceData') || '{}');
+
+      const todayAttendance = {};
+      document.querySelectorAll('.student-checkbox').forEach(cb => {
+        const studentId = cb.getAttribute('data-id');
+        todayAttendance[studentId] = cb.checked;
       });
 
-      const allData = JSON.parse(localStorage.getItem('attendanceData') || '{}');
-      allData[date] = attendance;
-      localStorage.setItem('attendanceData', JSON.stringify(allData));
-      alert('Attendance recorded!');
-    });
+      attendance[date] = todayAttendance;
+      localStorage.setItem('attendanceData', JSON.stringify(attendance));
+      alert('Attendance saved successfully!');
+    }
 
-    // Auto-load today’s date
-    attendanceDate.valueAsDate = new Date();
+    loadStudents();
   </script>
-
 </body>
 </html>

@@ -2,108 +2,174 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Swim Class - Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Swim Coach - Home</title>
   <style>
     body {
       font-family: Arial, sans-serif;
-      background: #f4f6f8;
+      margin: 0;
+      background: #f0f4f8;
       padding: 20px;
     }
 
-    h2 {
+    h1 {
+      text-align: center;
       color: #007bff;
+      margin-bottom: 30px;
     }
 
-    .dashboard {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 20px;
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 15px;
     }
 
     .card {
-      background: white;
-      border-radius: 10px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      background-color: white;
+      border-radius: 12px;
       padding: 20px;
-      flex: 1 1 150px;
-      min-width: 150px;
       text-align: center;
-    }
-
-    .card h3 {
-      margin: 10px 0 5px;
-      font-size: 24px;
+      font-size: 18px;
       color: #333;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+      transition: transform 0.2s, box-shadow 0.2s;
+      text-decoration: none;
     }
 
-    .card p {
-      margin: 0;
-      font-size: 16px;
-      color: #666;
+    .card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 6px 14px rgba(0, 0, 0, 0.1);
+    }
+
+    .card span {
+      display: block;
+      font-size: 24px;
+      margin-bottom: 8px;
     }
 
     @media (max-width: 600px) {
-      .dashboard {
-        flex-direction: column;
+      h1 {
+        font-size: 22px;
       }
+      .card {
+        font-size: 16px;
+        padding: 16px;
+      }
+    }
+
+    .summary {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+      margin-top: 20px;
+    }
+
+    .summary .card h3 {
+      margin: 0;
+      font-size: 16px;
+    }
+
+    .summary .card p {
+      font-size: 20px;
+      margin-top: 10px;
+      color: #007bff;
+      font-weight: bold;
     }
   </style>
 </head>
 <body>
-  <h2>Dashboard</h2>
-  <div class="dashboard">
+  <h1>🏊 Swim Class Manager</h1>
+
+  <div class="grid">
+    <a class="card" href="add-student.html">
+      <span>👨‍🎓</span> Student Management
+    </a>
+    <a class="card" href="view-students.html">
+      <span>📋</span> View Students
+    </a>
+    <a class="card" href="attendance.html">
+      <span>✅</span> Attendance
+    </a>
+    <a class="card" href="fee.html">
+      <span>💰</span> Fee Collection
+    </a>
+    <a class="card" href="attendance_report.html">
+      <span>🗒️</span> Attendance Report
+    </a>
+    <a class="card" href="finance_report.html">
+      <span>💹</span> Finance Summary
+    </a>
+    <a class="card" href="sms.html">
+      <span>📩</span> SMS Alerts
+    </a>
+    <a class="card" href="#" onclick="confirmDataReset()">
+      <span>🧹</span> Reset App (Secure)
+    </a>
+    <a class="card" href="index.html">
+      <span>🚪</span> Logout
+    </a>
+  </div>
+
+  <h2 style="margin-top: 30px; color: #007bff;">Dashboard Summary</h2>
+  <div class="summary">
     <div class="card">
-      <h3 id="totalStudents">0</h3>
-      <p>Total Students</p>
+      <h3>Total Students</h3>
+      <p id="totalStudentsCard">0</p>
     </div>
     <div class="card">
-      <h3 id="totalCollected">₹0</h3>
-      <p>Total Collected</p>
+      <h3>Total Collected</h3>
+      <p id="totalCollectedCard">₹0</p>
     </div>
     <div class="card">
-      <h3 id="pendingFee">₹0</h3>
-      <p>Pending Fee</p>
+      <h3>Pending Fee</h3>
+      <p id="totalPendingCard">₹0</p>
     </div>
   </div>
 
   <script>
-    function loadDashboard() {
-      const students = JSON.parse(localStorage.getItem('students')) || [];
-      const fees = JSON.parse(localStorage.getItem('fees')) || [];
+    function updateDashboardSummary() {
+      const students = JSON.parse(localStorage.getItem('students') || '[]');
+      const fees = JSON.parse(localStorage.getItem('feeRecords') || '[]');
 
-      // Total students
-      document.getElementById('totalStudents').textContent = students.length;
-
-      // Calculate total collected from all fees
+      let totalStudents = students.length;
       let totalCollected = 0;
-      fees.forEach(fee => {
-        totalCollected += parseFloat(fee.amount || 0);
-      });
-
-      // Add initial payments from students
-      students.forEach(student => {
-        totalCollected += parseFloat(student.initialPayment || 0);
-      });
-
-      document.getElementById('totalCollected').textContent = '₹' + totalCollected.toFixed(2);
-
-      // Calculate pending fees from students
       let pendingFee = 0;
+
       students.forEach(student => {
-        const collected = parseFloat(student.initialPayment || 0);
-        const studentFees = fees.filter(f => f.phone === student.phone);
-        studentFees.forEach(f => {
-          collected += parseFloat(f.amount || 0);
-        });
-        const totalFee = parseFloat(student.totalFee || 0);
-        pendingFee += Math.max(totalFee - collected, 0);
+        const initial = parseFloat(student.initialPayment) || 0;
+        const totalFee = parseFloat(student.totalFee) || 0;
+
+        const feeSum = fees
+          .filter(f => f.studentId === student.id)
+          .reduce((sum, f) => sum + (parseFloat(f.amount) || 0), 0);
+
+        const paid = initial + feeSum;
+        const pending = Math.max(totalFee - paid, 0);
+
+        totalCollected += paid;
+        pendingFee += pending;
       });
 
-      document.getElementById('pendingFee').textContent = '₹' + pendingFee.toFixed(2);
+      document.getElementById('totalStudentsCard').textContent = totalStudents;
+      document.getElementById('totalCollectedCard').textContent = `₹${totalCollected}`;
+      document.getElementById('totalPendingCard').textContent = `₹${pendingFee}`;
     }
 
-    loadDashboard();
+    function confirmDataReset() {
+      const password = prompt("Enter admin password to reset all app data:");
+      if (password === "admin123") {
+        const confirmReset = confirm("Are you sure you want to erase all app data? This cannot be undone.");
+        if (confirmReset) {
+          localStorage.clear();
+          alert("All data has been erased. App is now reset.");
+          location.reload();
+        }
+      } else {
+        alert("Incorrect password. Access denied.");
+      }
+    }
+
+    updateDashboardSummary();
   </script>
 </body>
 </html>

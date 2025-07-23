@@ -2,174 +2,74 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Swim Coach - Home</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Swim Class Manager - Home</title>
   <style>
     body {
       font-family: Arial, sans-serif;
-      margin: 0;
       background: #f0f4f8;
+      margin: 0;
+      padding: 0;
+    }
+
+    header {
+      background: #007bff;
+      color: white;
       padding: 20px;
+      text-align: center;
     }
 
     h1 {
-      text-align: center;
-      color: #007bff;
-      margin-bottom: 30px;
+      margin: 0;
+    }
+
+    .container {
+      padding: 20px;
     }
 
     .grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-      gap: 15px;
-    }
-
-    .card {
-      background-color: white;
-      border-radius: 12px;
-      padding: 20px;
-      text-align: center;
-      font-size: 18px;
-      color: #333;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
-      transition: transform 0.2s, box-shadow 0.2s;
-      text-decoration: none;
-    }
-
-    .card:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 6px 14px rgba(0, 0, 0, 0.1);
-    }
-
-    .card span {
-      display: block;
-      font-size: 24px;
-      margin-bottom: 8px;
-    }
-
-    @media (max-width: 600px) {
-      h1 {
-        font-size: 22px;
-      }
-      .card {
-        font-size: 16px;
-        padding: 16px;
-      }
-    }
-
-    .summary {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 15px;
+      gap: 20px;
       margin-top: 20px;
     }
 
-    .summary .card h3 {
-      margin: 0;
-      font-size: 16px;
+    .card {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      text-align: center;
+      transition: 0.2s ease;
     }
 
-    .summary .card p {
-      font-size: 20px;
-      margin-top: 10px;
+    .card:hover {
+      transform: scale(1.05);
+    }
+
+    .card a {
+      text-decoration: none;
       color: #007bff;
       font-weight: bold;
     }
   </style>
 </head>
 <body>
-  <h1>🏊 Swim Class Manager</h1>
+  <header>
+    <h1>Swim Class Manager</h1>
+    <p>Welcome to the dashboard</p>
+  </header>
 
-  <div class="grid">
-    <a class="card" href="add-student.html">
-      <span>👨‍🎓</span> Student Management
-    </a>
-    <a class="card" href="view-students.html">
-      <span>📋</span> View Students
-    </a>
-    <a class="card" href="attendance.html">
-      <span>✅</span> Attendance
-    </a>
-    <a class="card" href="fee.html">
-      <span>💰</span> Fee Collection
-    </a>
-    <a class="card" href="attendance_report.html">
-      <span>🗒️</span> Attendance Report
-    </a>
-    <a class="card" href="finance_report.html">
-      <span>💹</span> Finance Summary
-    </a>
-    <a class="card" href="sms.html">
-      <span>📩</span> SMS Alerts
-    </a>
-    <a class="card" href="#" onclick="confirmDataReset()">
-      <span>🧹</span> Reset App (Secure)
-    </a>
-    <a class="card" href="index.html">
-      <span>🚪</span> Logout
-    </a>
-  </div>
-
-  <h2 style="margin-top: 30px; color: #007bff;">Dashboard Summary</h2>
-  <div class="summary">
-    <div class="card">
-      <h3>Total Students</h3>
-      <p id="totalStudentsCard">0</p>
-    </div>
-    <div class="card">
-      <h3>Total Collected</h3>
-      <p id="totalCollectedCard">₹0</p>
-    </div>
-    <div class="card">
-      <h3>Pending Fee</h3>
-      <p id="totalPendingCard">₹0</p>
+  <div class="container">
+    <div class="grid">
+      <div class="card"><a href="add-student.html">➕ Add Student</a></div>
+      <div class="card"><a href="view-students.html">👥 View Students</a></div>
+      <div class="card"><a href="attendance.html">🗓️ Attendance</a></div>
+      <div class="card"><a href="fee.html">💰 Fee Collection</a></div>
+      <div class="card"><a href="finance-report.html">📊 Finance Report</a></div>
+      <div class="card"><a href="report.html">📋 Attendance Report</a></div>
+      <div class="card"><a href="settings.html">⚙️ Settings</a></div>
     </div>
   </div>
-
-  <script>
-    function updateDashboardSummary() {
-      const students = JSON.parse(localStorage.getItem('students') || '[]');
-      const fees = JSON.parse(localStorage.getItem('feeRecords') || '[]');
-
-      let totalStudents = students.length;
-      let totalCollected = 0;
-      let pendingFee = 0;
-
-      students.forEach(student => {
-        const initial = parseFloat(student.initialPayment) || 0;
-        const totalFee = parseFloat(student.totalFee) || 0;
-
-        const feeSum = fees
-          .filter(f => f.studentId === student.id)
-          .reduce((sum, f) => sum + (parseFloat(f.amount) || 0), 0);
-
-        const paid = initial + feeSum;
-        const pending = Math.max(totalFee - paid, 0);
-
-        totalCollected += paid;
-        pendingFee += pending;
-      });
-
-      document.getElementById('totalStudentsCard').textContent = totalStudents;
-      document.getElementById('totalCollectedCard').textContent = `₹${totalCollected}`;
-      document.getElementById('totalPendingCard').textContent = `₹${pendingFee}`;
-    }
-
-    function confirmDataReset() {
-      const password = prompt("Enter admin password to reset all app data:");
-      if (password === "admin123") {
-        const confirmReset = confirm("Are you sure you want to erase all app data? This cannot be undone.");
-        if (confirmReset) {
-          localStorage.clear();
-          alert("All data has been erased. App is now reset.");
-          location.reload();
-        }
-      } else {
-        alert("Incorrect password. Access denied.");
-      }
-    }
-
-    updateDashboardSummary();
-  </script>
 </body>
 </html>

@@ -2,6 +2,7 @@
 <html>
 <head>
   <title>Finance Report</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     body {
@@ -25,32 +26,15 @@
       box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
     }
 
-    label {
-      font-weight: bold;
-      display: block;
-      margin-bottom: 5px;
-    }
-
     select {
-      padding: 8px;
-      width: 100%;
-      margin-bottom: 15px;
-      border-radius: 5px;
-      border: 1px solid #ccc;
+      padding: 6px;
+      border-radius: 4px;
+      margin-bottom: 10px;
     }
 
     canvas {
-      max-width: 100%;
       margin-top: 20px;
-    }
-
-    @media (max-width: 600px) {
-      body {
-        padding: 10px;
-      }
-      .card {
-        padding: 10px;
-      }
+      max-width: 100%;
     }
   </style>
 </head>
@@ -58,109 +42,102 @@
   <h2>Finance Report</h2>
 
   <div class="card">
-    <label for="filter">Filter by:</label>
+    <label>Filter by:</label>
     <select id="filter" onchange="loadFinanceSummary()">
       <option value="all">All Time</option>
       <option value="today">Today</option>
       <option value="week">This Week</option>
       <option value="month">This Month</option>
+      <option value="year">This Year</option>
     </select>
 
-    <h3>Finance Summary</h3>
-    <p><strong>Total Income:</strong> <span id="filteredIncome">Rp0</span></p>
+    <h3>Summary</h3>
+    <p><strong>Total Fee Collected:</strong> <span id="totalIncome">Rp0</span></p>
     <p><strong>Total Paid Amount:</strong> <span id="totalPaid">Rp0</span></p>
-    <p><strong>Total Balance Remaining:</strong> <span id="totalBalance">Rp0</span></p>
+    <p><strong>Total Balance:</strong> <span id="totalBalance">Rp0</span></p>
 
-    <canvas id="incomeChart" width="400" height="300"></canvas>
+    <canvas id="incomeChart" height="200"></canvas>
   </div>
 
-  <div style="text-align: center; margin-top: 20px;">
+  <div style="text-align: center;">
     <button onclick="location.href='home.html'"
-      style="background-color: #3498db; color: white; border: none; padding: 10px 20px; margin-right: 10px; border-radius: 10px; cursor: pointer;">🏠 Home</button>
+      style="background-color: #3498db; color: white; padding: 10px 20px; margin-right: 10px; border-radius: 10px;">🏠
+      Home</button>
     <button onclick="history.back()"
-      style="background-color: #95a5a6; color: white; border: none; padding: 10px 20px; border-radius: 10px; cursor: pointer;">← Back</button>
+      style="background-color: #95a5a6; color: white; padding: 10px 20px; border-radius: 10px;">← Back</button>
   </div>
-
-  <!-- Chart.js CDN -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <script>
     let chart;
 
     function loadFinanceSummary() {
-      try {
-        const feeRaw = localStorage.getItem("fees");
-        const fees = feeRaw ? JSON.parse(feeRaw) : [];
-        const students = JSON.parse(localStorage.getItem("students") || "[]");
+      const feeRaw = localStorage.getItem("fees");
+      const studentRaw = localStorage.getItem("students");
 
-        const filter = document.getElementById("filter").value;
-        const today = new Date().toISOString().split("T")[0];
-        const now = new Date();
-        const startOfWeek = new Date(now);
-        startOfWeek.setDate(now.getDate() - now.getDay());
-        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      const fees = feeRaw ? JSON.parse(feeRaw) : [];
+      const students = studentRaw ? JSON.parse(studentRaw) : [];
 
-        let filteredTotal = 0;
-        let todayTotal = 0, weekTotal = 0, monthTotal = 0;
-        let totalPaid = 0, totalBalance = 0;
+      const filter = document.getElementById("filter").value;
+      const now = new Date();
 
-        fees.forEach(fee => {
-          const feeDate = new Date(fee.feeDate);
-          const amount = Number(fee.amount) || 0;
+      let totalIncome = 0;
 
-          if (fee.feeDate === today) todayTotal += amount;
-          if (feeDate >= startOfWeek) weekTotal += amount;
-          if (feeDate >= startOfMonth) monthTotal += amount;
+      fees.forEach(fee => {
+        const date = new Date(fee.feeDate);
+        if (
+          filter === "today" && fee.feeDate === new Date().toISOString().split("T")[0] ||
+          filter === "week" && isSameWeek(date, now) ||
+          filter === "month" && date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear() ||
+          filter === "year" && date.getFullYear() === now.getFullYear() ||
+          filter === "all"
+        ) {
+          totalIncome += Number(fee.amount) || 0;
+        }
+      });
 
-          if (filter === "today" && fee.feeDate === today) filteredTotal += amount;
-          else if (filter === "week" && feeDate >= startOfWeek) filteredTotal += amount;
-          else if (filter === "month" && feeDate >= startOfMonth) filteredTotal += amount;
-          else if (filter === "all") filteredTotal += amount;
-        });
+      let totalPaid = 0;
+      let totalBalance = 0;
 
-        students.forEach(s => {
-          totalPaid += Number(s.paidAmount) || 0;
-          totalBalance += Number(s.balance) || 0;
-        });
+      students.forEach(st => {
+        totalPaid += Number(st.paidAmount) || 0;
+        totalBalance += Number(st.balance) || 0;
+      });
 
-        document.getElementById("filteredIncome").textContent = `Rp${filteredTotal}`;
-        document.getElementById("totalPaid").textContent = `Rp${totalPaid}`;
-        document.getElementById("totalBalance").textContent = `Rp${totalBalance}`;
+      document.getElementById("totalIncome").textContent = `Rp${totalIncome}`;
+      document.getElementById("totalPaid").textContent = `Rp${totalPaid}`;
+      document.getElementById("totalBalance").textContent = `Rp${totalBalance}`;
 
-        // Draw Chart
-        drawChart(todayTotal, weekTotal, monthTotal);
-      } catch (e) {
-        console.error("Error loading finance:", e);
-      }
+      drawChart(totalIncome, totalPaid, totalBalance);
     }
 
-    function drawChart(today, week, month) {
+    function isSameWeek(d1, d2) {
+      const start = new Date(d2);
+      start.setDate(d2.getDate() - d2.getDay());
+      const end = new Date(start);
+      end.setDate(start.getDate() + 7);
+      return d1 >= start && d1 < end;
+    }
+
+    function drawChart(income, paid, balance) {
       const ctx = document.getElementById("incomeChart").getContext("2d");
-      if (chart) chart.destroy(); // Remove previous chart
+
+      if (chart) chart.destroy();
 
       chart = new Chart(ctx, {
         type: 'pie',
         data: {
-          labels: ['Today', 'This Week', 'This Month'],
+          labels: ['Fee Collected', 'Paid', 'Balance'],
           datasets: [{
-            label: 'Earnings',
-            data: [today, week, month],
-            backgroundColor: ['#2ecc71', '#3498db', '#f1c40f'],
-            borderWidth: 1
+            label: 'Amount (Rp)',
+            data: [income, paid, balance],
+            backgroundColor: ['#2ecc71', '#3498db', '#e74c3c'],
           }]
         },
         options: {
           responsive: true,
           plugins: {
             legend: {
-              position: 'bottom'
-            },
-            tooltip: {
-              callbacks: {
-                label: function(context) {
-                  return `${context.label}: Rp${context.raw}`;
-                }
-              }
+              position: 'bottom',
             }
           }
         }

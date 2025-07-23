@@ -104,5 +104,23 @@
       Logout
     </a>
   </div>
+
+  <script>
+function confirmDataReset() {
+  const password = prompt("Enter admin password to reset all app data:");
+  if (password === "admin123") {
+    const confirmReset = confirm("Are you sure you want to erase all app data? This cannot be undone.");
+    if (confirmReset) {
+      localStorage.clear(); // You can also delete specific keys if needed
+      alert("All data has been erased. App is now reset.");
+      location.reload();
+    }
+  } else {
+    alert("Incorrect password. Access denied.");
+  }
+}
+</script>
+
+
 </body>
 </html>

@@ -1,344 +1,259 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Report</title>
+  <meta charset="UTF-8">
+  <title>Reports</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     body {
       font-family: Arial, sans-serif;
-      padding: 15px;
-      background-color: #f6f8fa;
       margin: 0;
+      padding: 10px;
+      background: #f5f5f5;
     }
 
     h2 {
-      color: #333;
-      font-size: 1.5rem;
-      margin-top: 0;
+      text-align: center;
+      color: #007bff;
     }
 
-    .tab-buttons {
+    .tabs {
       display: flex;
-      margin-bottom: 15px;
-      gap: 5px;
+      justify-content: center;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
     }
 
-    .tab-buttons button {
-      flex: 1;
-      padding: 10px;
-      background-color: #e1e1e1;
-      border: none;
+    .tab {
+      padding: 10px 20px;
+      background: #eee;
+      margin: 5px;
       cursor: pointer;
-      font-size: 0.9rem;
       border-radius: 5px;
     }
 
-    .tab-buttons button.active {
-      background-color: #4285F4;
+    .tab.active {
+      background: #007bff;
       color: white;
     }
 
     .tab-content {
       display: none;
+      background: white;
+      padding: 15px;
+      border-radius: 5px;
     }
 
     .tab-content.active {
       display: block;
     }
 
-    select, button {
-      padding: 10px;
-      margin: 10px 0;
-      width: 100%;
-      border: 1px solid #ddd;
-      border-radius: 5px;
-      font-size: 0.9rem;
-    }
-
     .card {
-      background: white;
-      padding: 15px;
+      background: #fff;
       border-radius: 8px;
+      padding: 15px;
       margin-bottom: 15px;
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
     }
 
-    #attendanceResult {
-      max-height: 300px;
-      overflow-y: auto;
+    select, input[type="date"] {
+      padding: 8px;
+      margin-bottom: 10px;
+      width: 100%;
+      max-width: 300px;
     }
 
-    .finance-summary {
-      margin-bottom: 20px;
-    }
-
-    .student-finance-list {
-      margin-top: 20px;
-    }
-
-    .student-finance-item {
-      padding: 10px;
-      border-bottom: 1px solid #eee;
-      display: flex;
-      justify-content: space-between;
-    }
-
-    .student-finance-item:last-child {
-      border-bottom: none;
-    }
-
-    .balance-positive {
-      color: #28a745;
-    }
-
-    .balance-negative {
-      color: #dc3545;
-    }
-
-    /* Mobile-specific adjustments */
-    @media (max-width: 600px) {
-      body {
-        padding: 10px;
+    @media screen and (max-width: 600px) {
+      .tab {
+        flex: 1 1 100%;
+        text-align: center;
       }
-      .tab-buttons button {
-        padding: 8px;
-        font-size: 0.8rem;
-      }
-      .card {
-        padding: 10px;
-      }
+    }
+
+    .student-name {
+      font-weight: bold;
+    }
+
+    .present {
+      color: green;
+    }
+
+    .absent {
+      color: red;
+    }
+
+    hr {
+      margin: 10px 0;
     }
   </style>
 </head>
 <body>
   <h2>Reports</h2>
 
-  <div class="tab-buttons">
-    <button class="tab-btn active" onclick="switchTab('attendance')">Attendance</button>
-    <button class="tab-btn" onclick="switchTab('finance')">Finance</button>
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('attendance')">Attendance</div>
+    <div class="tab" onclick="switchTab('finance')">Finance</div>
   </div>
 
+  <!-- Attendance Tab -->
   <div id="attendance" class="tab-content active">
     <div class="card">
-      <label>Select Student:</label>
-      <select id="studentDropdown" onchange="showAttendanceHistory()">
-        <option value="">--Select Student--</option>
+      <h3>Attendance Report</h3>
+      <input type="date" id="attendanceDate" onchange="loadAttendanceReport()" />
+      <select id="studentFilter" onchange="loadAttendanceReport()">
+        <option value="">All Students</option>
       </select>
-      <div id="attendanceResult"></div>
     </div>
+    <div class="card" id="attendanceReport">Select a date to view attendance.</div>
   </div>
 
+  <!-- Finance Tab -->
   <div id="finance" class="tab-content">
     <div class="card">
-      <div class="finance-summary">
-        <h3>Finance Summary</h3>
-        <p><strong>Today's Income:</strong> <span id="todayIncome">Rp0</span></p>
-        <p><strong>This Week's Income:</strong> <span id="weekIncome">Rp0</span></p>
-        <p><strong>This Month's Income:</strong> <span id="monthIncome">Rp0</span></p>
-        <hr style="margin: 15px 0;">
-        <p><strong>Total Paid Amount:</strong> <span id="totalPaid">Rp0</span></p>
-        <p><strong>Total Balance Remaining:</strong> <span id="totalBalance">Rp0</span></p>
-      </div>
-
-      <div class="student-finance-list">
-        <h3>Student Fee Details</h3>
-        <div id="studentFinanceDetails">
-          <!-- Student fee details will be loaded here -->
-        </div>
-      </div>
+      <h3>Finance Summary</h3>
+      <p><strong>Today's Income:</strong> <span id="todayIncome">Rp0</span></p>
+      <p><strong>This Week's Income:</strong> <span id="weekIncome">Rp0</span></p>
+      <p><strong>This Month's Income:</strong> <span id="monthIncome">Rp0</span></p>
+      <hr>
+      <p><strong>Total Paid Amount:</strong> <span id="totalPaid">Rp0</span></p>
+      <p><strong>Total Balance Remaining:</strong> <span id="totalBalance">Rp0</span></p>
     </div>
-  </div>
 
-  <div style="text-align: center; margin-top: 20px;">
-    <button onclick="location.href='home.html'"
-      style="background-color: #3498db; color: white; border: none; padding: 10px 20px; margin-right: 10px; border-radius: 10px; cursor: pointer;">🏠 Home</button>
-    <button onclick="history.back()"
-      style="background-color: #95a5a6; color: white; border: none; padding: 10px 20px; border-radius: 10px; cursor: pointer;">← Back</button>
+    <div class="card">
+      <h3>Student-wise Fee Details</h3>
+      <div id="financeDetails"></div>
+    </div>
   </div>
 
   <script>
     function switchTab(tabId) {
-      document.querySelectorAll(".tab-btn").forEach(btn => btn.classList.remove("active"));
-      document.querySelectorAll(".tab-content").forEach(tab => tab.classList.remove("active"));
-      document.querySelector(`[onclick="switchTab('${tabId}')"]`).classList.add("active");
+      document.querySelectorAll(".tab").forEach(tab => {
+        tab.classList.remove("active");
+      });
+      document.querySelectorAll(".tab-content").forEach(content => {
+        content.classList.remove("active");
+      });
       document.getElementById(tabId).classList.add("active");
-      
-      // Refresh finance data when switching to finance tab
-      if (tabId === 'finance') {
-        loadFinanceSummary();
-        loadStudentFinanceDetails();
-      }
+      event.target.classList.add("active");
     }
 
-    // Load student list (unchanged from your working version)
-    function loadStudents() {
-      try {
-        const students = JSON.parse(localStorage.getItem("students") || []);
-        const dropdown = document.getElementById("studentDropdown");
-        dropdown.innerHTML = '<option value="">--Select Student--</option>';
-
-        students.forEach(student => {
-          const opt = document.createElement("option");
-          opt.value = student.name;
-          opt.textContent = `${student.name} (Rp${student.balance} balance)`;
-          dropdown.appendChild(opt);
-        });
-      } catch (e) {
-        console.error("Error parsing students data:", e);
-      }
+    function formatCurrency(amount) {
+      return new Intl.NumberFormat("id-ID", {
+        style: "currency",
+        currency: "IDR",
+        minimumFractionDigits: 0,
+      }).format(amount || 0);
     }
 
-    // Show attendance history (unchanged from your working version)
-    function showAttendanceHistory() {
-      const selectedStudentName = document.getElementById("studentDropdown").value;
-      const attendance = JSON.parse(localStorage.getItem("attendance") || []);
-      const students = JSON.parse(localStorage.getItem("students") || []);
+    function loadStudentDropdown() {
+      const studentSelect = document.getElementById("studentFilter");
+      const students = JSON.parse(localStorage.getItem("students") || "[]");
+      students.forEach(student => {
+        const option = document.createElement("option");
+        option.value = student.name;
+        option.textContent = student.name;
+        studentSelect.appendChild(option);
+      });
+    }
 
-      if (!selectedStudentName) {
-        document.getElementById("attendanceResult").innerHTML = "";
+    function loadAttendanceReport() {
+      const date = document.getElementById("attendanceDate").value;
+      const filter = document.getElementById("studentFilter").value;
+      const container = document.getElementById("attendanceReport");
+      container.innerHTML = "";
+
+      if (!date) {
+        container.textContent = "Please select a date.";
         return;
       }
 
-      const student = students.find(s => s.name === selectedStudentName);
-      const filtered = attendance.filter(a => a.name === selectedStudentName);
+      const attendance = JSON.parse(localStorage.getItem("attendance") || "{}");
+      const records = attendance[date] || {};
+      const students = JSON.parse(localStorage.getItem("students") || "[]");
 
-      let html = "";
+      let presentCount = 0;
+      let absentCount = 0;
 
-      if (student) {
-        html += `<div style="background: #f0f9ff; padding: 10px; margin-bottom: 15px; border-radius: 8px;">
-          <strong>Student Details:</strong><br>`;
-        if (student.image) {
-          html += `<img src="${student.image}" alt="${student.name}" style="width: 50px; height: 50px; border-radius: 50%; vertical-align: middle; margin-right: 5px;">`;
-        }
+      students.forEach(student => {
+        if (filter && student.name !== filter) return;
 
+        const status = records[student.name] || "Absent";
+        if (status === "Present") presentCount++;
+        else absentCount++;
+
+        const div = document.createElement("div");
+        div.innerHTML = `
+          <span class="student-name">${student.name}</span> - 
+          <span class="${status === 'Present' ? 'present' : 'absent'}">${status}</span>
+        `;
+        container.appendChild(div);
+      });
+
+      container.innerHTML += `<hr><strong>Present:</strong> ${presentCount}, <strong>Absent:</strong> ${absentCount}`;
+    }
+
+    function loadFinanceSummary() {
+      const payments = JSON.parse(localStorage.getItem("payments") || "[]");
+      const today = new Date().toISOString().slice(0, 10);
+      const currentMonth = new Date().getMonth();
+      const currentWeekStart = new Date();
+      currentWeekStart.setDate(currentWeekStart.getDate() - currentWeekStart.getDay());
+
+      let todayIncome = 0;
+      let weekIncome = 0;
+      let monthIncome = 0;
+      let totalPaid = 0;
+
+      payments.forEach(payment => {
+        const paymentDate = new Date(payment.date);
+        totalPaid += payment.amount;
+
+        if (payment.date === today) todayIncome += payment.amount;
+        if (paymentDate >= currentWeekStart) weekIncome += payment.amount;
+        if (paymentDate.getMonth() === currentMonth) monthIncome += payment.amount;
+      });
+
+      document.getElementById("todayIncome").textContent = formatCurrency(todayIncome);
+      document.getElementById("weekIncome").textContent = formatCurrency(weekIncome);
+      document.getElementById("monthIncome").textContent = formatCurrency(monthIncome);
+      document.getElementById("totalPaid").textContent = formatCurrency(totalPaid);
+    }
+
+    function loadFinanceDetailsPerStudent() {
+      const students = JSON.parse(localStorage.getItem("students") || []);
+      const container = document.getElementById("financeDetails");
+      container.innerHTML = "";
+
+      let balanceTotal = 0;
+
+      students.forEach(student => {
         const total = parseInt(student.totalFee || 0);
         const paid = parseInt(student.paidAmount || 0);
         const balance = total - paid;
+        balanceTotal += balance;
 
-        html += `Name: ${student.name}<br>
-          Phone: ${student.phone}<br>
-          Days: ${student.days ? student.days.join(', ') : student.day}<br>
-          Total Fee: Rp${total}<br>
-          Paid: Rp${paid}<br>
-          Balance: Rp${balance}
-        </div>`;
-      }
+        const div = document.createElement("div");
+        div.style.borderBottom = "1px solid #ddd";
+        div.style.padding = "10px 0";
+        div.innerHTML = `
+          <strong>${student.name}</strong><br>
+          Phone: ${student.phone || "-"}<br>
+          Total Fee: ${formatCurrency(total)} <br>
+          Paid: ${formatCurrency(paid)} <br>
+          Balance: ${formatCurrency(balance)}
+        `;
 
-      if (filtered.length > 0) {
-        html += "<h4>Attendance History:</h4><ul>";
-        filtered.forEach(a => {
-          html += `<li>${a.date} - ${a.status}</li>`;
-        });
-        html += "</ul>";
-      } else {
-        html += "<p>No attendance records found for this student.</p>";
-      }
+        container.appendChild(div);
+      });
 
-      document.getElementById("attendanceResult").innerHTML = html;
+      document.getElementById("totalBalance").textContent = formatCurrency(balanceTotal);
     }
 
-    // Enhanced Finance Summary with Student Details
-    function loadFinanceSummary() {
-      try {
-        const fees = JSON.parse(localStorage.getItem("fees") || "[]");
-        const students = JSON.parse(localStorage.getItem("students") || "[]");
-
-        const today = new Date().toISOString().split("T")[0];
-        const now = new Date();
-        const startOfWeek = new Date(now.setDate(now.getDate() - now.getDay()));
-        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-
-        let todayTotal = 0, weekTotal = 0, monthTotal = 0;
-        let totalPaidAmount = 0;
-        let totalBalance = 0;
-
-        // Calculate income from fees (additional payments)
-        fees.forEach(fee => {
-          const feeDate = new Date(fee.feeDate);
-          const amount = Number(fee.amount) || 0;
-
-          if (fee.feeDate === today) todayTotal += amount;
-          if (feeDate >= startOfWeek) weekTotal += amount;
-          if (feeDate >= startOfMonth) monthTotal += amount;
-        });
-
-        // Calculate from student records (initial payments + balances)
-        students.forEach(student => {
-          totalPaidAmount += Number(student.paidAmount) || 0;
-          totalBalance += Number(student.balance) || 0;
-        });
-
-        // Update additional fees paid through fee collection
-        fees.forEach(fee => {
-          totalPaidAmount += Number(fee.amount) || 0;
-        });
-
-        // Update DOM
-        document.getElementById("todayIncome").textContent = `Rp${todayTotal}`;
-        document.getElementById("weekIncome").textContent = `Rp${weekTotal}`;
-        document.getElementById("monthIncome").textContent = `Rp${monthTotal}`;
-        document.getElementById("totalPaid").textContent = `Rp${totalPaidAmount}`;
-        document.getElementById("totalBalance").textContent = `Rp${totalBalance}`;
-      } catch (e) {
-        console.error("Error loading finance summary:", e);
-      }
-    }
-
-    // New function to load detailed student finance information
-    function loadStudentFinanceDetails() {
-      try {
-        const students = JSON.parse(localStorage.getItem("students") || []);
-        const fees = JSON.parse(localStorage.getItem("fees") || []);
-        const container = document.getElementById("studentFinanceDetails");
-        container.innerHTML = "";
-
-        if (students.length === 0) {
-          container.innerHTML = "<p>No student records found.</p>";
-          return;
-        }
-
-        // Sort students by name
-        students.sort((a, b) => a.name.localeCompare(b.name));
-
-        students.forEach(student => {
-          const studentFees = fees.filter(fee => fee.studentId === student.id);
-          const totalFee = Number(student.totalFee) || 0;
-          const initialPayment = Number(student.paidAmount) || 0;
-          const additionalPayments = studentFees.reduce((sum, fee) => sum + (Number(fee.amount) || 0, 0);
-          const totalPaid = initialPayment + additionalPayments;
-          const balance = totalFee - totalPaid;
-
-          const item = document.createElement("div");
-          item.className = "student-finance-item";
-          
-          item.innerHTML = `
-            <div>
-              <strong>${student.name}</strong><br>
-              <small>Phone: ${student.phone || 'N/A'}</small>
-            </div>
-            <div style="text-align: right;">
-              <div>Fee: Rp${totalFee}</div>
-              <div>Paid: Rp${totalPaid}</div>
-              <div class="${balance >= 0 ? 'balance-positive' : 'balance-negative'}">
-                Balance: Rp${balance}
-              </div>
-            </div>
-          `;
-          
-          container.appendChild(item);
-        });
-      } catch (e) {
-        console.error("Error loading student finance details:", e);
-        document.getElementById("studentFinanceDetails").innerHTML = 
-          "<p>Error loading student finance data.</p>";
-      }
-    }
-
-    // Initialize
     window.onload = () => {
-      loadStudents();
+      loadStudentDropdown();
+      loadAttendanceReport();
       loadFinanceSummary();
-      loadStudentFinanceDetails();
+      loadFinanceDetailsPerStudent();
     };
   </script>
 </body>

@@ -63,6 +63,7 @@
     button.edit-btn { background-color: #ffc107; color: white; }
     button.delete-btn { background-color: #dc3545; color: white; }
     button.save-btn { background-color: #28a745; color: white; }
+    button.export-btn { background-color: #007bff; color: white; margin-bottom: 10px; }
 
     input[type="text"], input[type="number"] {
       width: 100%;
@@ -80,11 +81,18 @@
 <body>
 
   <h2>View Students</h2>
+
+  <button class="export-btn" onclick="exportToCSV()">⬇️ Export CSV</button>
+
   <div id="studentList"></div>
 
   <script>
     function getFees() {
       return JSON.parse(localStorage.getItem("fees")) || [];
+    }
+
+    function getAttendance() {
+      return JSON.parse(localStorage.getItem("attendance")) || [];
     }
 
     function renderStudents() {
@@ -102,9 +110,7 @@
 
         const card = document.createElement("div");
         card.className = "student-card";
-        if (pending <= 0) {
-          card.classList.add("paid");
-        }
+        if (pending <= 0) card.classList.add("paid");
 
         const top = document.createElement("div");
         top.className = "student-top";
@@ -180,6 +186,34 @@
       };
       localStorage.setItem("students", JSON.stringify(students));
       renderStudents();
+    }
+
+    function exportToCSV() {
+      const students = JSON.parse(localStorage.getItem("students") || "[]");
+      const fees = JSON.parse(localStorage.getItem("fees") || "[]");
+      const attendance = JSON.parse(localStorage.getItem("attendance") || "[]");
+
+      if (students.length === 0) {
+        alert("No student data available to export.");
+        return;
+      }
+
+      let csv = "Name,Phone,Day,Total Fee,Initial Payment,Paid Fee,Pending Fee,Attendance Count\n";
+
+      students.forEach(s => {
+        const studentFees = fees.filter(f => f.studentId == s.id);
+        const paid = (studentFees.reduce((sum, f) => sum + parseFloat(f.amount || 0), 0)) + parseFloat(s.initialPayment || 0);
+        const pending = parseFloat(s.totalFee || 0) - paid;
+        const attendCount = attendance.filter(a => a.studentId == s.id).length;
+
+        csv += `${s.name},${s.phone},${s.day || "-"},${s.totalFee || 0},${s.initialPayment || 0},${paid},${pending},${attendCount}\n`;
+      });
+
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = "students_data.csv";
+      link.click();
     }
 
     renderStudents();

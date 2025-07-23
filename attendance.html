@@ -1,50 +1,52 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Attendance</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     body {
       font-family: Arial, sans-serif;
+      background: #f0f4f8;
       margin: 0;
       padding: 10px;
-      background: #f5f6fa;
     }
 
-    header {
+    .top-bar {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      background: #007bff;
+      margin-bottom: 10px;
+    }
+
+    .top-bar button {
+      background-color: #007bff;
       color: white;
-      padding: 10px 15px;
-      border-radius: 5px;
-      margin-bottom: 15px;
-    }
-
-    header h2 {
-      margin: 0;
-      font-size: 18px;
-    }
-
-    .back-btn {
-      background: white;
-      color: #007bff;
+      padding: 6px 12px;
       border: none;
-      padding: 5px 10px;
       border-radius: 5px;
       font-size: 14px;
       cursor: pointer;
     }
 
-    select, button {
-      width: 100%;
-      padding: 10px;
+    h2 {
+      font-size: 20px;
+      color: #007bff;
       margin: 10px 0;
-      font-size: 16px;
-      border-radius: 5px;
-      border: 1px solid #ccc;
+      text-align: center;
+    }
+
+    label, select, input[type="date"] {
+      font-size: 14px;
+      margin: 6px 0;
+      width: 100%;
+    }
+
+    .filters {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 15px;
     }
 
     .student-list {
@@ -54,109 +56,129 @@
     }
 
     .student-card {
-      background: white;
-      padding: 10px;
-      border-radius: 8px;
-      box-shadow: 0 0 3px rgba(0, 0, 0, 0.1);
       display: flex;
-      align-items: center;
       justify-content: space-between;
-      flex-wrap: wrap;
+      align-items: center;
+      background: white;
+      padding: 12px;
+      border-radius: 10px;
+      box-shadow: 0 0 5px rgba(0,0,0,0.05);
     }
 
-    .student-name {
-      font-weight: bold;
-      font-size: 16px;
-      flex: 1;
+    .student-info {
+      display: flex;
+      flex-direction: column;
+      font-size: 14px;
     }
 
-    .checkbox {
-      transform: scale(1.3);
+    .student-info strong {
+      font-size: 15px;
     }
 
-    @media (max-width: 600px) {
-      .student-card {
-        flex-direction: column;
-        align-items: flex-start;
+    .student-card input[type="checkbox"] {
+      transform: scale(1.2);
+    }
+
+    @media (min-width: 600px) {
+      .filters {
+        flex-direction: row;
+        gap: 15px;
+        justify-content: space-between;
       }
 
-      .student-name, .checkbox {
-        width: 100%;
-        margin-top: 5px;
+      .filters > div {
+        flex: 1;
       }
     }
   </style>
 </head>
 <body>
 
-  <header>
-    <h2>Attendance</h2>
-    <button class="back-btn" onclick="goBack()">Back</button>
-  </header>
-
-  <label for="dayFilter">Select Day:</label>
-  <select id="dayFilter" onchange="filterStudentsByDay()">
-    <option value="All">All Days</option>
-    <option value="Monday">Monday</option>
-    <option value="Tuesday">Tuesday</option>
-    <option value="Wednesday">Wednesday</option>
-    <option value="Thursday">Thursday</option>
-    <option value="Friday">Friday</option>
-    <option value="Saturday">Saturday</option>
-    <option value="Sunday">Sunday</option>
-  </select>
-
-  <div class="student-list" id="studentList">
-    <!-- Students will be populated here -->
+  <div class="top-bar">
+    <button onclick="history.back()">← Back</button>
+    <h2>Mark Attendance</h2>
   </div>
 
-  <button onclick="saveAttendance()">Save Attendance</button>
+  <div class="filters">
+    <div>
+      <label for="dayFilter">Select Day:</label>
+      <select id="dayFilter" onchange="filterStudents()">
+        <option value="All">All</option>
+        <option value="Monday">Monday</option>
+        <option value="Tuesday">Tuesday</option>
+        <option value="Wednesday">Wednesday</option>
+        <option value="Thursday">Thursday</option>
+        <option value="Friday">Friday</option>
+        <option value="Saturday">Saturday</option>
+        <option value="Sunday">Sunday</option>
+      </select>
+    </div>
+
+    <div>
+      <label for="attendanceDate">Select Date:</label>
+      <input type="date" id="attendanceDate" />
+    </div>
+  </div>
+
+  <div class="student-list" id="studentList">
+    <!-- Students will be listed here -->
+  </div>
 
   <script>
-    const students = JSON.parse(localStorage.getItem("students")) || [];
-    const today = new Date().toLocaleDateString();
+    const studentsKey = 'students';
+    const attendanceKey = 'attendance';
 
-    function goBack() {
-      window.history.back();
-    }
+    document.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('attendanceDate').valueAsDate = new Date();
+      filterStudents();
+    });
 
-    function filterStudentsByDay() {
-      const selectedDay = document.getElementById("dayFilter").value;
-      const filtered = selectedDay === "All" ? students : students.filter(s => s.day === selectedDay);
-      displayStudents(filtered);
-    }
+    function filterStudents() {
+      const selectedDay = document.getElementById('dayFilter').value;
+      const studentListDiv = document.getElementById('studentList');
+      studentListDiv.innerHTML = '';
 
-    function displayStudents(list) {
-      const container = document.getElementById("studentList");
-      container.innerHTML = "";
-      list.forEach((student, index) => {
-        const div = document.createElement("div");
-        div.className = "student-card";
-        div.innerHTML = `
-          <span class="student-name">${student.name}</span>
-          <input class="checkbox" type="checkbox" id="attend_${index}">
+      const students = JSON.parse(localStorage.getItem(studentsKey)) || [];
+      const attendance = JSON.parse(localStorage.getItem(attendanceKey)) || {};
+      const todayDate = document.getElementById('attendanceDate').value;
+
+      const filtered = selectedDay === 'All'
+        ? students
+        : students.filter(s => s.day === selectedDay);
+
+      filtered.forEach(student => {
+        const studentId = student.id;
+        const isPresent = attendance[todayDate]?.[studentId] || false;
+
+        const card = document.createElement('div');
+        card.className = 'student-card';
+
+        const infoDiv = document.createElement('div');
+        infoDiv.className = 'student-info';
+        infoDiv.innerHTML = `
+          <strong>${student.name}</strong>
+          <span>${student.phone}</span>
+          <span style="color: #555;">Day: ${student.day}</span>
         `;
-        container.appendChild(div);
+
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.checked = isPresent;
+        checkbox.onchange = () => markAttendance(studentId, checkbox.checked);
+
+        card.appendChild(infoDiv);
+        card.appendChild(checkbox);
+        studentListDiv.appendChild(card);
       });
     }
 
-    function saveAttendance() {
-      const checkboxes = document.querySelectorAll(".checkbox");
-      const attendance = JSON.parse(localStorage.getItem("attendance")) || {};
-      const selectedDay = document.getElementById("dayFilter").value;
-      const filtered = selectedDay === "All" ? students : students.filter(s => s.day === selectedDay);
-
-      filtered.forEach((student, i) => {
-        const key = `${student.name}_${today}`;
-        attendance[key] = checkboxes[i].checked;
-      });
-
-      localStorage.setItem("attendance", JSON.stringify(attendance));
-      alert("Attendance saved!");
+    function markAttendance(studentId, status) {
+      const date = document.getElementById('attendanceDate').value;
+      const attendance = JSON.parse(localStorage.getItem(attendanceKey)) || {};
+      attendance[date] = attendance[date] || {};
+      attendance[date][studentId] = status;
+      localStorage.setItem(attendanceKey, JSON.stringify(attendance));
     }
-
-    // Init
-    filterStudentsByDay();
   </script>
 
 </body>

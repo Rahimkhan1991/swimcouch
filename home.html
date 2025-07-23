@@ -5,10 +5,7 @@
   <title>Swim Coach - Home</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    * {
-      box-sizing: border-box;
-    }
-
+    * { box-sizing: border-box; }
     body {
       font-family: Arial, sans-serif;
       margin: 0;
@@ -51,145 +48,121 @@
       margin-bottom: 8px;
     }
 
+    .summary-card {
+      background: white;
+      border-radius: 10px;
+      padding: 15px;
+      box-shadow: 0 0 8px rgba(0,0,0,0.1);
+      width: 180px;
+      font-weight: bold;
+      font-size: 14px;
+    }
+
     @media (max-width: 600px) {
-      h1 {
-        font-size: 22px;
-      }
-      .card {
-        font-size: 16px;
-        padding: 16px;
-      }
+      h1 { font-size: 22px; }
+      .card { font-size: 16px; padding: 16px; }
+      .summary-card { width: 100%; }
     }
   </style>
 </head>
-<script>
-  function updateDashboardSummary() {
-    const students = JSON.parse(localStorage.getItem('students') || '[]');
-    const fees = JSON.parse(localStorage.getItem('feeRecords') || '[]');
-
-    let totalStudents = students.length;
-    let totalCollected = 0;
-    let todayCollected = 0;
-    let weekCollected = 0;
-    let pendingFee = 0;
-
-    const today = new Date();
-    const todayStr = today.toISOString().split('T')[0];
-    const weekStart = new Date(today);
-    weekStart.setDate(today.getDate() - today.getDay()); // Sunday
-
-    students.forEach(s => {
-      const paid = parseFloat(s.initialPayment || 0);
-      const total = parseFloat(s.totalFee || 0);
-      totalCollected += paid;
-      pendingFee += total - paid;
-    });
-
-    fees.forEach(fee => {
-      const amount = parseFloat(fee.amount || 0);
-      const dateStr = fee.date;
-      const feeDate = new Date(dateStr);
-
-      totalCollected += amount;
-
-      if (dateStr === todayStr) {
-        todayCollected += amount;
-      }
-
-      if (feeDate >= weekStart && feeDate <= today) {
-        weekCollected += amount;
-      }
-    });
-
-    document.getElementById('total-students').textContent = `👨‍🎓 Total Students: ${totalStudents}`;
-    document.getElementById('total-collected').textContent = `💰 Total Collected: ${totalCollected}`;
-    document.getElementById('today-collected').textContent = `📅 Today: ${todayCollected}`;
-    document.getElementById('week-collected').textContent = `📆 This Week: ${weekCollected}`;
-    document.getElementById('pending-fee').textContent = `📊 Pending Fee: ${pendingFee}`;
-  }
-
-  updateDashboardSummary();
-</script>
 
 <body>
   <h1>🏊 Swim Class Manager</h1>
 
   <div class="grid">
-    <a class="card" href="add-student.html">
-      <span>👨‍🎓</span>
-      Student Management
-    </a>
-    <a class="card" href="view-students.html">
-      <span>📋</span>
-      View Students
-    </a>
-    <a class="card" href="attendance.html">
-      <span>✅</span>
-      Attendance
-    </a>
-    <a class="card" href="fee.html">
-      <span>💰</span>
-      Fee Collection
-    </a>
-    <!-- Update these links to match your actual filenames -->
-    <a class="card" href="attendance_report.html">
-    <span>🗒️</span>
-    Attendance Report
-    </a>
-    <a class="card" href="finance_report.html">  <!-- Changed from finance.html -->
-    <span>💹</span>
-    Finance Summary
-    </a>
-    <a class="card" href="sms.html">
-    <span>📩</span>
-    SMS Alerts
-    </a>
-    <a class="card" href="#" onclick="confirmDataReset()">
-    <span>🧹</span>
-    Reset App (Secure)
-    </a>
-    <a class="card" href="index.html">
-      <span>🚪</span>
-      Logout
-    </a>
+    <a class="card" href="add-student.html"><span>👨‍🎓</span>Student Management</a>
+    <a class="card" href="view-students.html"><span>📋</span>View Students</a>
+    <a class="card" href="attendance.html"><span>✅</span>Attendance</a>
+    <a class="card" href="fee.html"><span>💰</span>Fee Collection</a>
+    <a class="card" href="attendance_report.html"><span>🗒️</span>Attendance Report</a>
+    <a class="card" href="finance_report.html"><span>💹</span>Finance Summary</a>
+    <a class="card" href="sms.html"><span>📩</span>SMS Alerts</a>
+    <a class="card" href="#" onclick="confirmDataReset()"><span>🧹</span>Reset App (Secure)</a>
+    <a class="card" href="index.html"><span>🚪</span>Logout</a>
+  </div>
+
+  <h2 style="margin-top: 30px; color: #007bff;">Dashboard Summary</h2>
+  <div id="dashboard-summary" style="display: flex; flex-wrap: wrap; gap: 15px; margin-top: 10px;">
+    <div class="summary-card" id="total-students">👨‍🎓 Total Students: 0</div>
+    <div class="summary-card" id="total-collected">💰 Total Collected: 0</div>
+    <div class="summary-card" id="today-collected">📅 Today: 0</div>
+    <div class="summary-card" id="week-collected">📆 This Week: 0</div>
+    <div class="summary-card" id="pending-fee">📊 Pending Fee: 0</div>
   </div>
 
   <script>
-function confirmDataReset() {
-  const password = prompt("Enter admin password to reset all app data:");
-  if (password === "admin123") {
-    const confirmReset = confirm("Are you sure you want to erase all app data? This cannot be undone.");
-    if (confirmReset) {
-      localStorage.clear(); // You can also delete specific keys if needed
-      alert("All data has been erased. App is now reset.");
-      location.reload();
+    function formatCurrency(val) {
+      return "Rp" + parseFloat(val).toLocaleString('id-ID');
     }
-  } else {
-    alert("Incorrect password. Access denied.");
-  }
-}
-</script>
-<h2 style="margin-top: 30px; color: #007bff;">Dashboard Summary</h2>
-<div id="dashboard-summary" style="display: flex; flex-wrap: wrap; gap: 15px; margin-top: 10px;">
-  <div class="summary-card" id="total-students">👨‍🎓 Total Students: 0</div>
-  <div class="summary-card" id="total-collected">💰 Total Collected: 0</div>
-  <div class="summary-card" id="today-collected">📅 Today: 0</div>
-  <div class="summary-card" id="week-collected">📆 This Week: 0</div>
-  <div class="summary-card" id="pending-fee">📊 Pending Fee: 0</div>
-</div>
 
-<style>
-  .summary-card {
-    background: white;
-    border-radius: 10px;
-    padding: 15px;
-    box-shadow: 0 0 8px rgba(0,0,0,0.1);
-    width: 180px;
-    font-weight: bold;
-    font-size: 14px;
-  }
-</style>
+    function updateDashboardSummary() {
+      const students = JSON.parse(localStorage.getItem('students') || '[]');
+      const feeRecords = JSON.parse(localStorage.getItem('feeRecords') || '[]');
 
+      let totalStudents = students.length;
+      let totalCollected = 0;
+      let todayCollected = 0;
+      let weekCollected = 0;
+      let pendingFee = 0;
 
+      const today = new Date();
+      const todayStr = today.toISOString().split('T')[0];
+      const weekStart = new Date(today);
+      weekStart.setDate(today.getDate() - today.getDay()); // Sunday
+
+      const feeMap = {};
+
+      // Calculate total fee + initial payment
+      students.forEach(s => {
+        const initial = parseFloat(s.initialPayment || 0);
+        const total = parseFloat(s.totalFee || 0);
+        totalCollected += initial;
+        pendingFee += total - initial;
+        feeMap[s.id] = initial;
+      });
+
+      // Add fee records
+      feeRecords.forEach(fee => {
+        const amount = parseFloat(fee.amount || 0);
+        const dateStr = fee.date;
+        const feeDate = new Date(dateStr);
+
+        totalCollected += amount;
+        if (fee.studentId && feeMap[fee.studentId] !== undefined) {
+          pendingFee -= amount;
+        }
+
+        if (dateStr === todayStr) {
+          todayCollected += amount;
+        }
+
+        if (feeDate >= weekStart && feeDate <= today) {
+          weekCollected += amount;
+        }
+      });
+
+      document.getElementById('total-students').textContent = `👨‍🎓 Total Students: ${totalStudents}`;
+      document.getElementById('total-collected').textContent = `💰 Total Collected: ${formatCurrency(totalCollected)}`;
+      document.getElementById('today-collected').textContent = `📅 Today: ${formatCurrency(todayCollected)}`;
+      document.getElementById('week-collected').textContent = `📆 This Week: ${formatCurrency(weekCollected)}`;
+      document.getElementById('pending-fee').textContent = `📊 Pending Fee: ${formatCurrency(pendingFee)}`;
+    }
+
+    function confirmDataReset() {
+      const password = prompt("Enter admin password to reset all app data:");
+      if (password === "admin123") {
+        const confirmReset = confirm("Are you sure you want to erase all app data? This cannot be undone.");
+        if (confirmReset) {
+          localStorage.clear();
+          alert("All data has been erased. App is now reset.");
+          location.reload();
+        }
+      } else {
+        alert("Incorrect password. Access denied.");
+      }
+    }
+
+    window.addEventListener('load', updateDashboardSummary);
+  </script>
 </body>
 </html>

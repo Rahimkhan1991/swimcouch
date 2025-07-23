@@ -2,83 +2,95 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Add Student</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
     body {
+      margin: 0;
       font-family: 'Segoe UI', sans-serif;
-      background: #f0f4f8;
+      background: #f2f6ff;
       padding: 20px;
+    }
+
+    .container {
+      max-width: 500px;
+      margin: auto;
+      background: #fff;
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
     }
 
     h2 {
       text-align: center;
       color: #007bff;
-    }
-
-    .form-container {
-      max-width: 400px;
-      margin: auto;
-      background: white;
-      padding: 20px;
-      border-radius: 12px;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
     }
 
     label {
+      font-weight: 600;
       margin-top: 10px;
       display: block;
-      font-weight: bold;
+      color: #333;
     }
 
     input, select {
       width: 100%;
       padding: 10px;
       margin-top: 5px;
-      border-radius: 8px;
+      margin-bottom: 15px;
       border: 1px solid #ccc;
-      font-size: 14px;
+      border-radius: 8px;
+      font-size: 16px;
     }
 
-    #studentPhoto {
-      margin-bottom: 10px;
+    input[readonly] {
+      background: #e9ecef;
     }
 
-    #photoPreview {
+    #photo-preview {
       width: 100px;
       height: 100px;
+      border-radius: 8px;
       object-fit: cover;
-      margin-top: 10px;
-      border-radius: 10px;
-      display: none;
+      margin-bottom: 15px;
     }
 
     button {
-      background: #007bff;
-      color: white;
-      padding: 12px;
       width: 100%;
+      padding: 12px;
+      background: #28a745;
+      color: white;
       border: none;
-      border-radius: 10px;
       font-size: 16px;
-      margin-top: 20px;
+      border-radius: 8px;
       cursor: pointer;
     }
 
     button:hover {
-      background: #0056b3;
+      background: #218838;
+    }
+
+    .photo-buttons {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .photo-buttons input {
+      flex: 1;
     }
   </style>
 </head>
 <body>
+  <div class="container">
+    <h2>Add Student</h2>
 
-  <h2>Add New Student</h2>
+    <label for="name">Full Name</label>
+    <input type="text" id="name" required />
 
-  <div class="form-container">
-    <label for="name">Student Name:</label>
-    <input type="text" id="name" required>
-
-    <label for="day">Assigned Day:</label>
+    <label for="day">Assigned Day</label>
     <select id="day">
       <option value="Monday">Monday</option>
       <option value="Tuesday">Tuesday</option>
@@ -89,85 +101,91 @@
       <option value="Sunday">Sunday</option>
     </select>
 
-    <label for="totalFee">Total Fee (₹):</label>
-    <input type="number" id="totalFee" min="0" required>
+    <label for="totalFee">Total Fee (₹)</label>
+    <input type="number" id="totalFee" />
 
-    <label for="initialPayment">Initial Payment (₹):</label>
-    <input type="number" id="initialPayment" min="0" required>
+    <label for="initialPayment">Initial Payment (₹)</label>
+    <input type="number" id="initialPayment" />
 
-    <label for="pendingFee">Pending Fee (₹):</label>
-    <input type="number" id="pendingFee" disabled style="background:#f2f2f2;">
+    <label for="pendingFee">Pending Fee (₹)</label>
+    <input type="number" id="pendingFee" readonly />
 
-    <label for="studentPhoto">Upload / Take Photo:</label>
-    <input type="file" id="studentPhoto" accept="image/*" capture="environment">
-    <img id="photoPreview" alt="Preview" />
+    <label>Photo</label>
+    <img id="photo-preview" src="" alt="Preview" style="display:none;" />
+    <div class="photo-buttons">
+      <input type="file" accept="image/*" id="photoInput" />
+      <input type="file" accept="image/*" capture="environment" id="cameraInput" />
+    </div>
 
-    <button id="addBtn">Add Student</button>
+    <button onclick="addStudent()">Add Student</button>
   </div>
 
   <script>
-    const totalFeeInput = document.getElementById('totalFee');
-    const initialPaymentInput = document.getElementById('initialPayment');
-    const pendingFeeInput = document.getElementById('pendingFee');
-    const photoInput = document.getElementById('studentPhoto');
-    const photoPreview = document.getElementById('photoPreview');
-    let studentPhotoBase64 = "";
+    const totalFeeInput = document.getElementById("totalFee");
+    const initialPaymentInput = document.getElementById("initialPayment");
+    const pendingFeeInput = document.getElementById("pendingFee");
+    const photoInput = document.getElementById("photoInput");
+    const cameraInput = document.getElementById("cameraInput");
+    const photoPreview = document.getElementById("photo-preview");
 
-    // Calculate pending fee in real-time
-    function updatePendingFee() {
-      const total = parseInt(totalFeeInput.value || "0");
-      const paid = parseInt(initialPaymentInput.value || "0");
-      const pending = Math.max(total - paid, 0);
-      pendingFeeInput.value = pending;
+    let studentPhoto = "";
+
+    function calculatePending() {
+      const total = parseFloat(totalFeeInput.value) || 0;
+      const paid = parseFloat(initialPaymentInput.value) || 0;
+      pendingFeeInput.value = total - paid;
     }
 
-    totalFeeInput.addEventListener("input", updatePendingFee);
-    initialPaymentInput.addEventListener("input", updatePendingFee);
+    totalFeeInput.addEventListener("input", calculatePending);
+    initialPaymentInput.addEventListener("input", calculatePending);
 
-    // Convert image to base64
-    photoInput.addEventListener("change", function () {
-      const file = this.files[0];
-      if (!file) return;
+    function readImageFile(file) {
       const reader = new FileReader();
-      reader.onloadend = function () {
-        studentPhotoBase64 = reader.result;
-        photoPreview.src = studentPhotoBase64;
-        photoPreview.style.display = 'block';
+      reader.onload = function (e) {
+        studentPhoto = e.target.result;
+        photoPreview.src = studentPhoto;
+        photoPreview.style.display = "block";
       };
       reader.readAsDataURL(file);
+    }
+
+    photoInput.addEventListener("change", (e) => {
+      if (e.target.files[0]) readImageFile(e.target.files[0]);
     });
 
-    // Save student to localStorage
-    document.getElementById("addBtn").addEventListener("click", function () {
+    cameraInput.addEventListener("change", (e) => {
+      if (e.target.files[0]) readImageFile(e.target.files[0]);
+    });
+
+    function addStudent() {
       const name = document.getElementById("name").value.trim();
       const day = document.getElementById("day").value;
-      const totalFee = parseInt(totalFeeInput.value || "0");
-      const initialPayment = parseInt(initialPaymentInput.value || "0");
-      const pendingFee = totalFee - initialPayment;
+      const totalFee = parseFloat(totalFeeInput.value) || 0;
+      const initialPayment = parseFloat(initialPaymentInput.value) || 0;
+      const pendingFee = parseFloat(pendingFeeInput.value) || 0;
 
-      if (!name || totalFee < 0 || initialPayment < 0) {
-        alert("Please fill all required fields correctly.");
+      if (!name || !day) {
+        alert("Please fill in all required fields.");
         return;
       }
 
-      const newStudent = {
+      const student = {
         name,
         day,
         totalFee,
         initialPayment,
         pendingFee,
-        photo: studentPhotoBase64,
-        timestamp: new Date().toISOString()
+        photo: studentPhoto,
+        timestamp: new Date().toISOString(),
       };
 
       const students = JSON.parse(localStorage.getItem("students") || "[]");
-      students.push(newStudent);
+      students.push(student);
       localStorage.setItem("students", JSON.stringify(students));
 
       alert("Student added successfully!");
       window.location.href = "view-students.html";
-    });
+    }
   </script>
-
 </body>
 </html>

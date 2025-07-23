@@ -2,109 +2,166 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Add Student</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
     body {
       font-family: Arial, sans-serif;
+      margin: 0;
       background: #f0f4f8;
       padding: 20px;
     }
 
-    h2 {
-      color: #007bff;
-      text-align: center;
-      margin-bottom: 20px;
-    }
-
-    form {
+    .container {
       background: white;
       padding: 20px;
-      border-radius: 12px;
+      border-radius: 10px;
       max-width: 500px;
       margin: auto;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
     }
 
-    label {
-      display: block;
-      margin-top: 12px;
-      font-weight: bold;
+    h2 {
+      text-align: center;
+      color: #007bff;
+      margin-bottom: 20px;
     }
 
     input, select {
       width: 100%;
       padding: 10px;
-      margin-top: 6px;
-      border-radius: 6px;
+      margin: 8px 0;
       border: 1px solid #ccc;
+      border-radius: 6px;
+      box-sizing: border-box;
+    }
+
+    .photo-preview {
+      width: 100px;
+      height: 100px;
+      object-fit: cover;
+      margin-top: 10px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
     }
 
     button {
-      margin-top: 20px;
       width: 100%;
+      padding: 12px;
       background: #007bff;
       color: white;
-      padding: 12px;
-      font-size: 16px;
       border: none;
-      border-radius: 8px;
+      border-radius: 6px;
+      font-size: 16px;
+      margin-top: 15px;
       cursor: pointer;
     }
 
     button:hover {
       background: #0056b3;
     }
+
+    label {
+      font-weight: bold;
+      margin-top: 10px;
+      display: block;
+    }
   </style>
 </head>
 <body>
-  <h2>Add New Student</h2>
-  <form id="studentForm">
-    <label for="name">Student Name</label>
-    <input type="text" id="name" required>
+  <div class="container">
+    <h2>Add New Student</h2>
 
-    <label for="phone">Phone Number</label>
-    <input type="tel" id="phone" required>
+    <label>Name</label>
+    <input type="text" id="name" placeholder="Student name">
 
-    <label for="day">Class Day</label>
-    <select id="day" required>
-      <option value="">Select</option>
-      <option>Monday</option>
-      <option>Wednesday</option>
-      <option>Friday</option>
-      <option>Saturday</option>
+    <label>Assigned Day</label>
+    <select id="day">
+      <option value="Monday">Monday</option>
+      <option value="Tuesday">Tuesday</option>
+      <option value="Wednesday">Wednesday</option>
+      <option value="Thursday">Thursday</option>
+      <option value="Friday">Friday</option>
+      <option value="Saturday">Saturday</option>
+      <option value="Sunday">Sunday</option>
     </select>
 
-    <label for="fee">Fee Amount</label>
-    <input type="number" id="fee" required>
+    <label>Total Fee (₹)</label>
+    <input type="number" id="totalFee" placeholder="Total fee">
 
-    <label for="joinDate">Join Date</label>
-    <input type="date" id="joinDate">
+    <label>Initial Payment (₹)</label>
+    <input type="number" id="initialPayment" placeholder="Amount paid">
 
-    <button type="submit">Save Student</button>
-  </form>
+    <label>Pending Fee (₹)</label>
+    <input type="number" id="pendingFee" placeholder="Auto-calculated" readonly>
+
+    <label>Upload or Take Photo</label>
+    <input type="file" id="photo" accept="image/*" capture="environment">
+    <img id="photoPreview" class="photo-preview" src="" alt="Preview" style="display:none;"/>
+
+    <button onclick="addStudent()">Add Student</button>
+  </div>
 
   <script>
-    const form = document.getElementById('studentForm');
-    form.addEventListener('submit', function (e) {
-      e.preventDefault();
+    const totalFeeInput = document.getElementById('totalFee');
+    const initialPaymentInput = document.getElementById('initialPayment');
+    const pendingFeeInput = document.getElementById('pendingFee');
+    const photoInput = document.getElementById('photo');
+    const photoPreview = document.getElementById('photoPreview');
+
+    // Auto-calculate pending fee
+    totalFeeInput.addEventListener('input', calculatePendingFee);
+    initialPaymentInput.addEventListener('input', calculatePendingFee);
+
+    function calculatePendingFee() {
+      const total = parseFloat(totalFeeInput.value) || 0;
+      const paid = parseFloat(initialPaymentInput.value) || 0;
+      pendingFeeInput.value = total - paid;
+    }
+
+    // Preview photo
+    photoInput.addEventListener('change', function () {
+      const file = this.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function (e) {
+          photoPreview.src = e.target.result;
+          photoPreview.style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+
+    function addStudent() {
+      const name = document.getElementById('name').value.trim();
+      const day = document.getElementById('day').value;
+      const totalFee = totalFeeInput.value.trim();
+      const initialPayment = initialPaymentInput.value.trim();
+      const pendingFee = pendingFeeInput.value.trim();
+      const photoData = photoPreview.src || '';
+
+      if (!name || !totalFee || !initialPayment) {
+        alert("Please fill in all required fields.");
+        return;
+      }
 
       const student = {
-        name: document.getElementById('name').value.trim(),
-        phone: document.getElementById('phone').value.trim(),
-        day: document.getElementById('day').value,
-        fee: document.getElementById('fee').value.trim(),
-        joinDate: document.getElementById('joinDate').value
+        name,
+        day,
+        totalFee,
+        initialPayment,
+        pendingFee,
+        photoData
       };
 
-      // Load existing students
+      // Save to localStorage
       let students = JSON.parse(localStorage.getItem('students')) || [];
       students.push(student);
       localStorage.setItem('students', JSON.stringify(students));
 
       alert("Student added successfully!");
-      form.reset();
-    });
+      window.location.href = "view-students.html";
+    }
   </script>
 </body>
 </html>

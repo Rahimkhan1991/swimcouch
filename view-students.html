@@ -2,145 +2,234 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>All Students</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>View Students</title>
   <style>
     body {
       font-family: Arial, sans-serif;
-      background: #eef2f7;
-      padding: 20px;
+      background: #f1f5f9;
       margin: 0;
+      padding: 20px;
     }
 
     h2 {
-      text-align: center;
       color: #007bff;
       margin-bottom: 20px;
     }
 
-    .student-list {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 15px;
-      justify-content: center;
+    .back-button {
+      background: #007bff;
+      color: white;
+      padding: 8px 16px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-bottom: 20px;
     }
 
-    .student-card {
+    .card {
       background: white;
+      padding: 12px;
       border-radius: 12px;
-      padding: 15px 25px;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-      cursor: pointer;
-      transition: transform 0.2s;
-      min-width: 180px;
-      text-align: center;
-      font-weight: bold;
-    }
-
-    .student-card:hover {
-      transform: scale(1.05);
-    }
-
-    .pending {
-      color: red;
-      border-left: 6px solid red;
-    }
-
-    .modal {
-      display: none;
-      position: fixed;
-      z-index: 100;
-      left: 0; top: 0;
-      width: 100%; height: 100%;
-      background-color: rgba(0,0,0,0.6);
-      justify-content: center;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      margin-bottom: 15px;
+      display: flex;
       align-items: center;
+      justify-content: space-between;
     }
 
-    .modal-content {
-      background: white;
-      padding: 25px;
-      border-radius: 10px;
-      width: 90%;
-      max-width: 400px;
-      position: relative;
-    }
-
-    .close-btn {
-      position: absolute;
-      top: 10px; right: 15px;
-      font-size: 20px;
+    .card-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
       cursor: pointer;
-      color: #aaa;
     }
 
-    .close-btn:hover {
-      color: black;
+    .card img {
+      width: 50px;
+      height: 50px;
+      object-fit: cover;
+      border-radius: 50%;
+      border: 1px solid #ccc;
     }
 
-    .info p {
+    .card-name {
+      font-weight: bold;
+      font-size: 16px;
+    }
+
+    .card-actions {
+      display: flex;
+      gap: 10px;
+    }
+
+    .card-actions button {
+      padding: 6px 10px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .edit-btn {
+      background: #28a745;
+      color: white;
+    }
+
+    .delete-btn {
+      background: #dc3545;
+      color: white;
+    }
+
+    .popup {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.2);
+      display: none;
+      z-index: 1000;
+    }
+
+    .popup h3 {
+      margin-top: 0;
+      color: #007bff;
+    }
+
+    .popup p {
       margin: 8px 0;
-      font-size: 15px;
     }
 
-    @media (max-width: 500px) {
-      .student-card {
-        width: 100%;
-      }
+    .popup button {
+      background: #007bff;
+      color: white;
+      padding: 8px 14px;
+      border: none;
+      border-radius: 6px;
+      margin-top: 12px;
+      cursor: pointer;
+    }
+
+    #overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.3);
+      display: none;
+      z-index: 999;
     }
   </style>
 </head>
 <body>
 
+  <button class="back-button" onclick="goBack()">⬅ Back</button>
   <h2>All Students</h2>
-  <div class="student-list" id="studentList"></div>
 
-  <!-- Modal -->
-  <div class="modal" id="modal">
-    <div class="modal-content">
-      <span class="close-btn" onclick="closeModal()">&times;</span>
-      <div class="info" id="studentInfo"></div>
-    </div>
+  <div id="student-list"></div>
+
+  <div id="overlay"></div>
+  <div class="popup" id="studentPopup">
+    <h3 id="popupName"></h3>
+    <p><strong>Day:</strong> <span id="popupDay"></span></p>
+    <p><strong>Total Fee:</strong> ₹<span id="popupTotalFee"></span></p>
+    <p><strong>Pending Fee:</strong> ₹<span id="popupPendingFee"></span></p>
+    <button onclick="closePopup()">Close</button>
   </div>
 
   <script>
-    const students = JSON.parse(localStorage.getItem("students") || "[]");
-    const studentList = document.getElementById("studentList");
-    const modal = document.getElementById("modal");
-    const studentInfo = document.getElementById("studentInfo");
+    const studentList = document.getElementById('student-list');
+    const popup = document.getElementById('studentPopup');
+    const overlay = document.getElementById('overlay');
 
-    students.forEach((s, i) => {
-      const card = document.createElement("div");
-      card.className = "student-card" + (s.status === "Pending" ? " pending" : "");
-      card.textContent = s.name;
-      card.onclick = () => showDetails(s);
-      studentList.appendChild(card);
-    });
-
-    function showDetails(s) {
-      studentInfo.innerHTML = `
-        <h3>${s.name}</h3>
-        <p><strong>Phone:</strong> ${s.phone}</p>
-        <p><strong>Age:</strong> ${s.age}</p>
-        <p><strong>Gender:</strong> ${s.gender}</p>
-        <p><strong>Day:</strong> ${s.day}</p>
-        <p><strong>Time:</strong> ${s.time}</p>
-        <p><strong>Fee:</strong> Rp. ${s.fee}</p>
-        <p><strong>Status:</strong> <span style="color:${s.status === 'Pending' ? 'red' : 'green'}">${s.status}</span></p>
-        <p><strong>Remarks:</strong> ${s.remarks}</p>
-      `;
-      modal.style.display = "flex";
+    function goBack() {
+      window.location.href = 'home.html';
     }
 
-    function closeModal() {
-      modal.style.display = "none";
+    function closePopup() {
+      popup.style.display = 'none';
+      overlay.style.display = 'none';
     }
 
-    // Close modal if user clicks outside modal content
-    window.onclick = function(e) {
-      if (e.target == modal) closeModal();
-    };
+    function openPopup(student) {
+      document.getElementById('popupName').innerText = student.name;
+      document.getElementById('popupDay').innerText = student.day || '-';
+      document.getElementById('popupTotalFee').innerText = student.totalFee || '0';
+      const pending = (parseInt(student.totalFee || 0) - parseInt(student.initialPayment || 0));
+      document.getElementById('popupPendingFee').innerText = pending >= 0 ? pending : 0;
+
+      overlay.style.display = 'block';
+      popup.style.display = 'block';
+    }
+
+    function editStudent(index) {
+      localStorage.setItem('editIndex', index);
+      window.location.href = 'add-student.html';
+    }
+
+    function deleteStudent(index) {
+      if (confirm("Are you sure you want to delete this student?")) {
+        let students = JSON.parse(localStorage.getItem('students')) || [];
+        students.splice(index, 1);
+        localStorage.setItem('students', JSON.stringify(students));
+        renderStudents();
+      }
+    }
+
+    function renderStudents() {
+      studentList.innerHTML = '';
+      const students = JSON.parse(localStorage.getItem('students')) || [];
+
+      students.forEach((student, index) => {
+        const card = document.createElement('div');
+        card.className = 'card';
+
+        const cardLeft = document.createElement('div');
+        cardLeft.className = 'card-left';
+        cardLeft.onclick = () => openPopup(student);
+
+        const image = document.createElement('img');
+        image.src = student.photo || 'https://via.placeholder.com/50';
+        cardLeft.appendChild(image);
+
+        const name = document.createElement('div');
+        name.className = 'card-name';
+        name.innerText = student.name;
+        cardLeft.appendChild(name);
+
+        const actions = document.createElement('div');
+        actions.className = 'card-actions';
+
+        const editBtn = document.createElement('button');
+        editBtn.className = 'edit-btn';
+        editBtn.innerText = 'Edit';
+        editBtn.onclick = (e) => {
+          e.stopPropagation();
+          editStudent(index);
+        };
+
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'delete-btn';
+        deleteBtn.innerText = 'Delete';
+        deleteBtn.onclick = (e) => {
+          e.stopPropagation();
+          deleteStudent(index);
+        };
+
+        actions.appendChild(editBtn);
+        actions.appendChild(deleteBtn);
+
+        card.appendChild(cardLeft);
+        card.appendChild(actions);
+
+        studentList.appendChild(card);
+      });
+    }
+
+    renderStudents();
   </script>
-
 </body>
 </html>

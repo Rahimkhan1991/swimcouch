@@ -62,6 +62,55 @@
     }
   </style>
 </head>
+<script>
+  function updateDashboardSummary() {
+    const students = JSON.parse(localStorage.getItem('students') || '[]');
+    const fees = JSON.parse(localStorage.getItem('feeRecords') || '[]');
+
+    let totalStudents = students.length;
+    let totalCollected = 0;
+    let todayCollected = 0;
+    let weekCollected = 0;
+    let pendingFee = 0;
+
+    const today = new Date();
+    const todayStr = today.toISOString().split('T')[0];
+    const weekStart = new Date(today);
+    weekStart.setDate(today.getDate() - today.getDay()); // Sunday
+
+    students.forEach(s => {
+      const paid = parseFloat(s.initialPayment || 0);
+      const total = parseFloat(s.totalFee || 0);
+      totalCollected += paid;
+      pendingFee += total - paid;
+    });
+
+    fees.forEach(fee => {
+      const amount = parseFloat(fee.amount || 0);
+      const dateStr = fee.date;
+      const feeDate = new Date(dateStr);
+
+      totalCollected += amount;
+
+      if (dateStr === todayStr) {
+        todayCollected += amount;
+      }
+
+      if (feeDate >= weekStart && feeDate <= today) {
+        weekCollected += amount;
+      }
+    });
+
+    document.getElementById('total-students').textContent = `👨‍🎓 Total Students: ${totalStudents}`;
+    document.getElementById('total-collected').textContent = `💰 Total Collected: ${totalCollected}`;
+    document.getElementById('today-collected').textContent = `📅 Today: ${todayCollected}`;
+    document.getElementById('week-collected').textContent = `📆 This Week: ${weekCollected}`;
+    document.getElementById('pending-fee').textContent = `📊 Pending Fee: ${pendingFee}`;
+  }
+
+  updateDashboardSummary();
+</script>
+
 <body>
   <h1>🏊 Swim Class Manager</h1>
 

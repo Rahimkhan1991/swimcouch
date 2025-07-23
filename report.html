@@ -68,6 +68,21 @@
       overflow-y: auto;
     }
 
+    .student-info {
+      background: #f0f9ff;
+      padding: 10px;
+      margin-bottom: 15px;
+      border-radius: 8px;
+    }
+
+    .attendance-history {
+      margin-top: 15px;
+    }
+
+    .attendance-history ul {
+      padding-left: 20px;
+    }
+
     /* Mobile-specific adjustments */
     @media (max-width: 600px) {
       body {
@@ -129,43 +144,52 @@
     }
 
     // Load student list
-   function loadStudents() {
-  try {
-    const students = JSON.parse(localStorage.getItem("students") || []);
-    const dropdown = document.getElementById("studentDropdown");
-    dropdown.innerHTML = '<option value="">--Select Student--</option>';
+    function loadStudents() {
+      try {
+        const students = JSON.parse(localStorage.getItem("students") || []);
+        const dropdown = document.getElementById("studentDropdown");
+        dropdown.innerHTML = '<option value="">--Select Student--</option>';
 
-    // Sort students by name
-    students.sort((a, b) => a.name.localeCompare(b.name)).forEach(student => {
-      const opt = document.createElement("option");
-      opt.value = student.name;
-      opt.textContent = `${student.name} (Rp${student.balance || 0} balance)`;
-      dropdown.appendChild(opt);
-    });
-  } catch (e) {
-    console.error("Error loading students:", e);
-    alert("Failed to load student data. Check console for details.");
-  }
-}
+        // Sort students alphabetically
+        students.sort((a, b) => a.name.localeCompare(b.name))
+          .forEach(student => {
+            const opt = document.createElement("option");
+            opt.value = student.name;
+            opt.textContent = `${student.name} (Rp${student.balance || 0} balance)`;
+            dropdown.appendChild(opt);
+          });
+      } catch (e) {
+        console.error("Error loading students:", e);
+        showMessage("Failed to load student data");
+      }
+    }
 
     function showAttendanceHistory() {
       const selectedStudentName = document.getElementById("studentDropdown").value;
-      const attendance = JSON.parse(localStorage.getItem("attendance") || "[]");
-      const students = JSON.parse(localStorage.getItem("students") || "[]");
-
       if (!selectedStudentName) {
         document.getElementById("attendanceResult").innerHTML = "";
         return;
       }
 
-      const student = students.find(s => s.name === selectedStudentName);
-      const filtered = attendance.filter(a => a.name === selectedStudentName);
+      try {
+        const attendance = JSON.parse(localStorage.getItem("attendance") || []);
+        const students = JSON.parse(localStorage.getItem("students") || []);
+        
+        const student = students.find(s => s.name === selectedStudentName);
+        if (!student) {
+          document.getElementById("attendanceResult").innerHTML = "<p>Student not found</p>";
+          return;
+        }
 
-      let html = "";
+        // Filter attendance by student name
+        const studentAttendance = attendance
+          .filter(a => a.name === selectedStudentName)
+          .sort((a, b) => new Date(b.date) - new Date(a.date)); // Newest first
 
-      if (student) {
-        html += `<div style="background: #f0f9ff; padding: 10px; margin-bottom: 15px; border-radius: 8px;">
+        // Build student info
+        let html = `<div class="student-info">
           <strong>Student Details:</strong><br>`;
+        
         if (student.image) {
           html += `<img src="${student.image}" alt="${student.name}" style="width: 50px; height: 50px; border-radius: 50%; margin-right: 10px;">`;
         }
@@ -181,130 +205,95 @@
           Paid: Rp${paid}<br>
           Balance: Rp${balance}
         </div>`;
-      }
 
-      if (filtered.length > 0) {
-        html += "<h4>Attendance History:</h4><ul style='padding-left: 20px;'>";
-        filtered.forEach(a => {
-          html += `<li>${a.date} - ${a.status}</li>`;
-        });
-        html += "</ul>";
-      } else {
-        html += "<p>No attendance records found.</p>";
-      }
+        // Build attendance history
+        if (studentAttendance.length > 0) {
+          html += `<div class="attendance-history">
+            <h4>Attendance History (${studentAttendance.length} sessions):</h4>
+            <ul>`;
+          
+          studentAttendance.forEach(a => {
+            html += `<li>${formatDate(a.date)} - ${a.status}</li>`;
+          });
+          
+          html += `</ul></div>`;
+        } else {
+          html += "<p>No attendance records found for this student.</p>";
+        }
 
-      document.getElementById("attendanceResult").innerHTML = html;
+        document.getElementById("attendanceResult").innerHTML = html;
+      } catch (e) {
+        console.error("Error showing attendance:", e);
+        showMessage("Error loading attendance data");
+      }
     }
 
-    // Fixed finance summary logic
+    // Helper to format dates
+    function formatDate(dateString) {
+      const options = { year: 'numeric', month: 'short', day: 'numeric' };
+      return new Date(dateString).toLocaleDateString(undefined, options);
+    }
+
+    // Load finance summary
     function loadFinanceSummary() {
-      const fees = JSON.parse(localStorage.getItem("fees") || "[]");
-      const students = JSON.parse(localStorage.getItem("students") || "[]");
+      try {
+        const fees = JSON.parse(localStorage.getItem("fees") || []);
+        const students = JSON.parse(localStorage.getItem("students") || []);
 
-      const today = new Date().toISOString().split("T")[0];
-      const now = new Date();
-      const startOfWeek = new Date(now.setDate(now.getDate() - now.getDay()));
-      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        const today = new Date().toISOString().split("T")[0];
+        const now = new Date();
+        const startOfWeek = new Date(now.setDate(now.getDate() - now.getDay()));
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
-      let todayTotal = 0, weekTotal = 0, monthTotal = 0;
-      let totalPaidAmount = 0;
-      let totalBalance = 0;
+        let todayTotal = 0, weekTotal = 0, monthTotal = 0;
+        let totalPaidAmount = 0;
+        let totalBalance = 0;
 
-      // Calculate income from fees (additional payments)
-      fees.forEach(fee => {
-        const feeDate = new Date(fee.feeDate);
-        const amount = Number(fee.amount) || 0;
+        // Calculate from fees
+        fees.forEach(fee => {
+          const feeDate = new Date(fee.feeDate);
+          const amount = Number(fee.amount) || 0;
 
-        if (fee.feeDate === today) todayTotal += amount;
-        if (feeDate >= startOfWeek) weekTotal += amount;
-        if (feeDate >= startOfMonth) monthTotal += amount;
-      });
+          if (fee.feeDate === today) todayTotal += amount;
+          if (feeDate >= startOfWeek) weekTotal += amount;
+          if (feeDate >= startOfMonth) monthTotal += amount;
+        });
 
-      // Calculate from student records (initial payments + balances)
-      students.forEach(student => {
-        totalPaidAmount += Number(student.paidAmount) || 0;
-        totalBalance += Number(student.balance) || 0;
-      });
+        // Calculate from students
+        students.forEach(student => {
+          totalPaidAmount += Number(student.paidAmount) || 0;
+          totalBalance += Number(student.balance) || 0;
+        });
 
-      // Update DOM
-      document.getElementById("todayIncome").textContent = `Rp${todayTotal}`;
-      document.getElementById("weekIncome").textContent = `Rp${weekTotal}`;
-      document.getElementById("monthIncome").textContent = `Rp${monthTotal}`;
-      document.getElementById("totalPaid").textContent = `Rp${totalPaidAmount}`;
-      document.getElementById("totalBalance").textContent = `Rp${totalBalance}`;
+        // Update DOM
+        document.getElementById("todayIncome").textContent = `Rp${todayTotal}`;
+        document.getElementById("weekIncome").textContent = `Rp${weekTotal}`;
+        document.getElementById("monthIncome").textContent = `Rp${monthTotal}`;
+        document.getElementById("totalPaid").textContent = `Rp${totalPaidAmount}`;
+        document.getElementById("totalBalance").textContent = `Rp${totalBalance}`;
+      } catch (e) {
+        console.error("Error loading finance:", e);
+      }
     }
 
+    // Show status message
+    function showMessage(message) {
+      const msgElement = document.createElement('div');
+      msgElement.className = 'status-message';
+      msgElement.textContent = message;
+      
+      const existingMsg = document.querySelector('.status-message');
+      if (existingMsg) existingMsg.remove();
+      
+      document.body.appendChild(msgElement);
+      setTimeout(() => msgElement.remove(), 3000);
+    }
+
+    // Initialize
     window.onload = () => {
       loadStudents();
       loadFinanceSummary();
     };
   </script>
-  <script>
- window.onload = () => {
-  // Set default date if not set
-  if (!document.getElementById('attendanceDate').value) {
-    document.getElementById('attendanceDate').valueAsDate = new Date();
-  }
-  loadStudents();
-  loadFinanceSummary();
-};
-
-  // Get ALL attendance records
-  const allAttendance = JSON.parse(localStorage.getItem("attendance")) || [];
-  
-  // Find the student in students list
-  const students = JSON.parse(localStorage.getItem("students")) || [];
-  const student = students.find(s => s.name === selectedStudentName);
-  
-  if (!student) {
-    document.getElementById("attendanceResult").innerHTML = "<p>Student not found</p>";
-    return;
-  }
-
-  // Filter attendance by student ID AND name (double check)
-  const studentAttendance = allAttendance.filter(a => 
-    (a.studentId && a.studentId === student.id) || 
-    (a.studentName && a.studentName === student.name)
-  ).sort((a, b) => new Date(b.date) - new Date(a.date)); // Sort by date newest first
-
-  // Build student info HTML
-  let html = `<div style="background: #f0f9ff; padding: 10px; margin-bottom: 15px; border-radius: 8px;">
-    <strong>Student Details:</strong><br>`;
-  
-  if (student.image) {
-    html += `<img src="${student.image}" alt="${student.name}" style="width: 50px; height: 50px; border-radius: 50%; margin-right: 10px;">`;
-  }
-
-  const total = parseInt(student.totalFee || 0);
-  const paid = parseInt(student.paidAmount || 0);
-  const balance = total - paid;
-
-  html += `Name: ${student.name}<br>
-    Phone: ${student.phone || 'N/A'}<br>
-    Days: ${student.days ? student.days.join(', ') : student.day || 'N/A'}<br>
-    Total Fee: Rp${total}<br>
-    Paid: Rp${paid}<br>
-    Balance: Rp${balance}</div>`;
-
-  // Build attendance history HTML
-  if (studentAttendance.length > 0) {
-    html += "<h4>Attendance History:</h4><ul style='padding-left: 20px;'>";
-    studentAttendance.forEach(a => {
-      html += `<li>${formatDate(a.date)} - ${a.status}</li>`;
-    });
-    html += `</ul><p>Total attended: ${studentAttendance.length} sessions</p>`;
-  } else {
-    html += "<p>No attendance records found for this student.</p>";
-  }
-
-  document.getElementById("attendanceResult").innerHTML = html;
-}
-
-// Helper function to format date
-function formatDate(dateString) {
-  const options = { year: 'numeric', month: 'short', day: 'numeric' };
-  return new Date(dateString).toLocaleDateString(undefined, options);
-}
-</script>
 </body>
 </html>

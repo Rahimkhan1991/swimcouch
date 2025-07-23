@@ -1,60 +1,47 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Finance Report</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     body {
       font-family: Arial, sans-serif;
-      padding: 20px;
       background: #f0f4f8;
+      padding: 20px;
     }
 
     h2 {
       color: #007bff;
-      margin-bottom: 10px;
     }
 
     .summary {
       display: flex;
-      gap: 20px;
+      justify-content: space-around;
+      margin: 20px 0;
       flex-wrap: wrap;
-      margin-bottom: 20px;
     }
 
-    .summary div {
+    .card {
       background: white;
-      padding: 15px 20px;
+      padding: 20px;
       border-radius: 10px;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-      min-width: 150px;
+      width: 280px;
+      margin: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      text-align: center;
     }
 
     canvas {
-      background: white;
-      padding: 10px;
-      border-radius: 12px;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
       max-width: 400px;
-      margin-bottom: 20px;
-    }
-
-    .filter {
-      margin: 15px 0;
-    }
-
-    select {
-      padding: 8px;
-      border-radius: 6px;
+      margin: auto;
     }
 
     .back-btn {
       display: inline-block;
-      margin-bottom: 20px;
+      margin-bottom: 15px;
       padding: 10px 20px;
-      background: #007bff;
+      background-color: #007bff;
       color: white;
       text-decoration: none;
       border-radius: 8px;
@@ -62,102 +49,84 @@
   </style>
 </head>
 <body>
+  <a href="home.html" class="back-btn">← Back to Home</a>
+  <h2>Finance Report</h2>
 
-  <a class="back-btn" href="home.html">← Back</a>
-  <h2>📊 Finance Summary</h2>
-
-  <div class="filter">
-    <label for="monthFilter">Month: </label>
-    <select id="monthFilter">
-      <option value="">All</option>
-      <option value="01">January</option>
-      <option value="02">February</option>
-      <option value="03">March</option>
-      <option value="04">April</option>
-      <option value="05">May</option>
-      <option value="06">June</option>
-      <option value="07">July</option>
-      <option value="08">August</option>
-      <option value="09">September</option>
-      <option value="10">October</option>
-      <option value="11">November</option>
-      <option value="12">December</option>
-    </select>
+  <div class="summary">
+    <div class="card">
+      <h3>Total Collected</h3>
+      <p id="totalIncome">Rp0</p>
+    </div>
+    <div class="card">
+      <h3>Total Expected</h3>
+      <p id="expectedIncome">Rp0</p>
+    </div>
+    <div class="card">
+      <h3>Total Pending</h3>
+      <p id="pendingIncome">Rp0</p>
+    </div>
   </div>
 
-  <div class="summary" id="summary">
-    <!-- Totals will be injected here -->
-  </div>
+  <canvas id="financeChart" width="400" height="400"></canvas>
 
-  <canvas id="feeChart"></canvas>
-
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script>
-    const students = JSON.parse(localStorage.getItem('students')) || [];
-    const monthFilter = document.getElementById('monthFilter');
-    const summaryDiv = document.getElementById('summary');
-
-    function formatMonth(dateStr) {
-      if (!dateStr) return '';
-      const d = new Date(dateStr);
-      return ('0' + (d.getMonth() + 1)).slice(-2);
+    function getStudents() {
+      return JSON.parse(localStorage.getItem("students")) || [];
     }
 
-    function updateFinanceView(filterMonth = "") {
-      let totalExpected = 0;
-      let totalCollected = 0;
+    function getFees() {
+      return JSON.parse(localStorage.getItem("fees")) || [];
+    }
 
-      const filteredStudents = students.filter(s => {
-        if (filterMonth === "") return true;
-        return formatMonth(s.date) === filterMonth;
-      });
+    function calculateFinanceSummary() {
+      const students = getStudents();
+      const fees = getFees();
 
-      filteredStudents.forEach(s => {
-        const expected = parseFloat(s.totalFee) || 0;
-        const collected = parseFloat(s.initialPayment) || 0;
-        totalExpected += expected;
-        totalCollected += collected;
-      });
+      // Sum of initial payments from student records
+      const initialPayments = students.reduce((sum, student) => sum + Number(student.initialPayment || 0), 0);
 
+      // Sum of additional payments from fee.html
+      const additionalPayments = fees.reduce((sum, fee) => sum + Number(fee.amount), 0);
+
+      const totalCollected = initialPayments + additionalPayments;
+      const totalExpected = students.reduce((sum, student) => sum + Number(student.totalFee || 0), 0);
       const totalPending = totalExpected - totalCollected;
 
-      summaryDiv.innerHTML = `
-        <div><strong>Total Expected:</strong><br>₹ ${totalExpected.toFixed(2)}</div>
-        <div><strong>Total Collected:</strong><br>₹ ${totalCollected.toFixed(2)}</div>
-        <div><strong>Pending Amount:</strong><br>₹ ${totalPending.toFixed(2)}</div>
-      `;
+      document.getElementById("totalIncome").textContent = "Rp" + totalCollected;
+      document.getElementById("expectedIncome").textContent = "Rp" + totalExpected;
+      document.getElementById("pendingIncome").textContent = "Rp" + (totalPending < 0 ? 0 : totalPending);
 
       drawChart(totalCollected, totalPending);
     }
 
     function drawChart(collected, pending) {
-      const ctx = document.getElementById('feeChart').getContext('2d');
-      if (window.feeChart) window.feeChart.destroy();
+      const ctx = document.getElementById("financeChart").getContext("2d");
+      if (window.myChart) {
+        window.myChart.destroy();
+      }
 
-      window.feeChart = new Chart(ctx, {
-        type: 'pie',
+      window.myChart = new Chart(ctx, {
+        type: "pie",
         data: {
-          labels: ['Collected', 'Pending'],
+          labels: ["Collected", "Pending"],
           datasets: [{
             data: [collected, pending],
-            backgroundColor: ['#28a745', '#dc3545']
+            backgroundColor: ["#28a745", "#ffc107"]
           }]
         },
         options: {
           responsive: true,
           plugins: {
             legend: {
-              position: 'bottom'
+              position: "bottom"
             }
           }
         }
       });
     }
 
-    monthFilter.addEventListener('change', () => {
-      updateFinanceView(monthFilter.value);
-    });
-
-    updateFinanceView();
+    window.onload = calculateFinanceSummary;
   </script>
 </body>
 </html>

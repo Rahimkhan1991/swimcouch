@@ -5,14 +5,117 @@
   <title>Attendance</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    /* Your existing styles */
+    :root {
+      --primary: #007bff;
+      --bg: #f0f4f8;
+      --white: #ffffff;
+      --gray: #ccc;
+      --shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
     body {
       font-family: Arial, sans-serif;
       margin: 0;
       padding: 10px;
-      background-color: #f0f4f8;
+      background-color: var(--bg);
     }
-    /* Keep all your existing styles */
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--white);
+      padding: 15px 10px;
+      border-radius: 10px;
+      box-shadow: var(--shadow);
+      margin-bottom: 10px;
+    }
+
+    h2 {
+      font-size: 20px;
+      margin: 0;
+      color: var(--primary);
+    }
+
+    .btn {
+      padding: 10px 15px;
+      background-color: var(--primary);
+      border: none;
+      color: white;
+      font-size: 14px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .back-btn {
+      background-color: #6c757d;
+    }
+
+    .top-controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+
+    input[type="date"], select {
+      padding: 10px;
+      font-size: 14px;
+      border: 1px solid var(--gray);
+      border-radius: 6px;
+      flex: 1;
+      min-width: 130px;
+    }
+
+    label {
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      margin-top: 5px;
+    }
+
+    .student-list {
+      margin-bottom: 20px;
+    }
+
+    .student-card {
+      background: var(--white);
+      padding: 12px 15px;
+      margin-bottom: 10px;
+      border-radius: 10px;
+      box-shadow: var(--shadow);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .student-name {
+      font-weight: bold;
+      font-size: 15px;
+    }
+
+    .status-message {
+      background: #28a745;
+      color: white;
+      text-align: center;
+      padding: 10px;
+      border-radius: 6px;
+      margin-top: 10px;
+    }
+
+    @media (max-width: 600px) {
+      .student-card {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .student-card input[type="checkbox"] {
+        align-self: flex-end;
+        margin-top: 8px;
+      }
+    }
   </style>
 </head>
 <body>
@@ -44,114 +147,92 @@
   <button class="btn" onclick="saveAttendance()">Submit Attendance</button>
 
   <script>
-    // Initialize with today's date
+    // Set today's date
     document.getElementById('attendanceDate').valueAsDate = new Date();
-    
-    // Load students from localStorage
+
     function loadStudents() {
       try {
         const students = JSON.parse(localStorage.getItem('students')) || [];
         const selectedDay = document.getElementById('dayFilter').value;
-        
-        // Filter by day if selected
-        const filteredStudents = selectedDay 
+
+        const filtered = selectedDay 
           ? students.filter(s => s.day === selectedDay || (s.days && s.days.includes(selectedDay)))
           : students;
-        
-        displayStudents(filteredStudents);
+
+        displayStudents(filtered);
       } catch (error) {
         showMessage('Error loading students: ' + error.message);
       }
     }
-    
-    // Display students in the list
+
     function displayStudents(students) {
-      const studentList = document.getElementById('studentList');
-      studentList.innerHTML = '';
-      
+      const list = document.getElementById('studentList');
+      list.innerHTML = '';
+
       if (students.length === 0) {
-        studentList.innerHTML = '<p>No students found</p>';
+        list.innerHTML = '<p>No students found</p>';
         return;
       }
-      
-      // Load existing attendance for the selected date
-      const attendanceDate = document.getElementById('attendanceDate').value;
-      const attendanceRecords = JSON.parse(localStorage.getItem('attendance')) || [];
-      const todaysAttendance = attendanceRecords.filter(record => record.date === attendanceDate);
-      
+
+      const date = document.getElementById('attendanceDate').value;
+      const records = JSON.parse(localStorage.getItem('attendance')) || [];
+      const todaysRecords = records.filter(r => r.date === date);
+
       students.forEach(student => {
         const card = document.createElement('div');
         card.className = 'student-card';
-        
         card.innerHTML = `
           <div class="student-name">${student.name}</div>
           <input type="checkbox" class="mark-present" data-name="${student.name}" 
-            ${todaysAttendance.some(record => record.name === student.name) ? 'checked' : ''}>
+            ${todaysRecords.some(r => r.name === student.name) ? 'checked' : ''}>
         `;
-        
-        studentList.appendChild(card);
+        list.appendChild(card);
       });
     }
-    
-    // Mark all students present/absent
+
     function markAllPresent() {
-      const checkAll = document.getElementById('markAll').checked;
-      document.querySelectorAll('.mark-present').forEach(checkbox => {
-        checkbox.checked = checkAll;
-      });
+      const checked = document.getElementById('markAll').checked;
+      document.querySelectorAll('.mark-present').forEach(cb => cb.checked = checked);
     }
-    
-    // Save attendance to localStorage - RESTORED OLD WORKING VERSION
+
     function saveAttendance() {
       try {
         const date = document.getElementById('attendanceDate').value;
-        if (!date) {
-          showMessage('Please select a date');
-          return;
-        }
-        
+        if (!date) return showMessage('Please select a date');
+
         const checkboxes = document.querySelectorAll('.mark-present');
-        const attendanceRecords = JSON.parse(localStorage.getItem('attendance')) || [];
-        
-        // Remove existing records for this date
-        const updatedRecords = attendanceRecords.filter(record => record.date !== date);
-        
-        // Add new records for present students - USING NAME FIELD AS IN OLD VERSION
-        checkboxes.forEach(checkbox => {
-          if (checkbox.checked) {
-            updatedRecords.push({
-              date: date,
-              name: checkbox.dataset.name, // Using name field for compatibility
-              status: 'Present'
-            });
+        const all = JSON.parse(localStorage.getItem('attendance')) || [];
+
+        const updated = all.filter(r => r.date !== date);
+
+        checkboxes.forEach(cb => {
+          if (cb.checked) {
+            updated.push({ date, name: cb.dataset.name, status: 'Present' });
           }
         });
-        
-        localStorage.setItem('attendance', JSON.stringify(updatedRecords));
+
+        localStorage.setItem('attendance', JSON.stringify(updated));
         showMessage('Attendance saved successfully!');
-      } catch (error) {
-        showMessage('Error saving attendance: ' + error.message);
+      } catch (e) {
+        showMessage('Error saving attendance: ' + e.message);
       }
     }
-    
-    // Show status message
-    function showMessage(message) {
-      const msgElement = document.createElement('div');
-      msgElement.className = 'status-message';
-      msgElement.textContent = message;
-      
-      const existingMsg = document.querySelector('.status-message');
-      if (existingMsg) existingMsg.remove();
-      
-      document.body.appendChild(msgElement);
-      setTimeout(() => msgElement.remove(), 3000);
+
+    function showMessage(msg) {
+      const old = document.querySelector('.status-message');
+      if (old) old.remove();
+
+      const el = document.createElement('div');
+      el.className = 'status-message';
+      el.textContent = msg;
+      document.body.appendChild(el);
+
+      setTimeout(() => el.remove(), 3000);
     }
-    
-    // Event listeners
+
     document.getElementById('dayFilter').addEventListener('change', loadStudents);
     document.getElementById('attendanceDate').addEventListener('change', loadStudents);
-    
-    // Initial load
+
     loadStudents();
   </script>
 </body>

@@ -27,6 +27,10 @@
       gap: 10px;
     }
 
+    .paid {
+      background: #d4edda;
+    }
+
     .student-top {
       display: flex;
       gap: 10px;
@@ -98,6 +102,9 @@
 
         const card = document.createElement("div");
         card.className = "student-card";
+        if (pending <= 0) {
+          card.classList.add("paid");
+        }
 
         const top = document.createElement("div");
         top.className = "student-top";
@@ -115,7 +122,9 @@
           📅 ${student.day || "-"}<br>
           💰 Total: Rp${student.totalFee}<br>
           ✅ Paid: Rp${totalPaid}<br>
-          ❌ Pending: Rp${pending}
+          ❌ Pending: ${pending <= 0 
+            ? '<span style="color:green;font-weight:bold;">✅ Paid</span>' 
+            : 'Rp' + pending}
         `;
         top.appendChild(info);
         card.appendChild(top);

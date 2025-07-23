@@ -1,21 +1,19 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>View Students</title>
+  <meta charset="UTF-8">
+  <title>All Students</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     body {
-      font-family: 'Segoe UI', sans-serif;
-      background: #f4f9ff;
+      font-family: Arial, sans-serif;
+      background: #f0f4f8;
       padding: 20px;
-      color: #333;
     }
 
     h2 {
       text-align: center;
-      color: #004aad;
+      color: #007bff;
     }
 
     table {
@@ -23,134 +21,84 @@
       border-collapse: collapse;
       margin-top: 20px;
       background: white;
-      border-radius: 10px;
+      border-radius: 8px;
       overflow: hidden;
-      box-shadow: 0 0 8px rgba(0, 0, 0, 0.05);
     }
 
     th, td {
-      padding: 12px 15px;
+      padding: 12px;
+      border-bottom: 1px solid #ccc;
       text-align: left;
-      border-bottom: 1px solid #ddd;
-      font-size: 15px;
     }
 
     th {
-      background-color: #007bff;
+      background: #007bff;
       color: white;
     }
 
-    td button {
-      padding: 5px 10px;
-      border: none;
-      border-radius: 6px;
-      font-size: 14px;
-      cursor: pointer;
-      margin-right: 5px;
+    .pending {
+      color: red;
+      font-weight: bold;
     }
 
-    .edit-btn {
-      background-color: #ffc107;
-      color: #000;
-    }
+    @media (max-width: 600px) {
+      table, thead, tbody, th, td, tr {
+        display: block;
+      }
 
-    .delete-btn {
-      background-color: #dc3545;
-      color: white;
-    }
+      th {
+        display: none;
+      }
 
-    .footer-buttons {
-      text-align: center;
-      margin-top: 20px;
-    }
+      td {
+        position: relative;
+        padding-left: 50%;
+        text-align: right;
+      }
 
-    .footer-buttons button {
-      padding: 10px 20px;
-      margin: 5px;
-      font-size: 16px;
-      border: none;
-      border-radius: 8px;
-      background-color: #007bff;
-      color: white;
-      cursor: pointer;
-    }
-
-    .footer-buttons button:last-child {
-      background-color: #6c757d;
+      td::before {
+        content: attr(data-label);
+        position: absolute;
+        left: 10px;
+        font-weight: bold;
+        text-align: left;
+      }
     }
   </style>
 </head>
-
 <body>
   <h2>All Students</h2>
 
-  <table id="studentsTable">
+  <table id="studentTable">
     <thead>
       <tr>
         <th>Name</th>
         <th>Phone</th>
-        <th>Days</th>
+        <th>Day</th>
+        <th>Time</th>
         <th>Fee</th>
-        <th>Paid</th>
-        <th>Actions</th>
+        <th>Status</th>
       </tr>
     </thead>
-    <tbody id="studentsBody">
-      <!-- Filled by JS -->
-    </tbody>
+    <tbody></tbody>
   </table>
 
-  <div class="footer-buttons">
-    <button onclick="location.href='add-student.html'">➕ Add New Student</button>
-    <button onclick="location.href='home.html'">🏠 Home</button>
-  </div>
-
-  <script src="script.js"></script>
   <script>
-    if (!checkAuth()) return;
-
     const students = JSON.parse(localStorage.getItem("students") || "[]");
+    const tableBody = document.querySelector("#studentTable tbody");
 
-    const tbody = document.getElementById("studentsBody");
-
-    if (students.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">No students found.</td></tr>';
-    } else {
-      students.forEach((student, index) => {
-        const row = document.createElement("tr");
-        row.innerHTML = `
-          <td>${student.name}</td>
-          <td>${student.phone}</td>
-          <td>${(student.days || [student.day || "-"]).join(", ")}</td>
-          <td>${student.totalFee || 0}</td>
-          <td>${student.paidAmount || 0}</td>
-          <td>
-            <button class="edit-btn" onclick="editStudent(${index})">Edit</button>
-            <button class="delete-btn" onclick="deleteStudent(${index})">Delete</button>
-          </td>
-        `;
-        tbody.appendChild(row);
-      });
-    }
-
-    function editStudent(index) {
-      const student = students[index];
-      student.id = index; // add id so we know which student to update
-      localStorage.setItem("editingStudent", JSON.stringify(student));
-      window.location.href = "add-student.html?edit=true";
-    }
-
-    function deleteStudent(index) {
-      if (confirm("Are you sure you want to delete this student?")) {
-        students.splice(index, 1);
-        localStorage.setItem("students", JSON.stringify(students));
-        location.reload();
-      }
-    }
+    students.forEach(s => {
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td data-label="Name">${s.name}</td>
+        <td data-label="Phone">${s.phone}</td>
+        <td data-label="Day">${s.day}</td>
+        <td data-label="Time">${s.time}</td>
+        <td data-label="Fee">Rp. ${s.fee}</td>
+        <td data-label="Status" class="${s.status === 'Pending' ? 'pending' : ''}">${s.status}</td>
+      `;
+      tableBody.appendChild(row);
+    });
   </script>
-  <script>
-  const students = JSON.parse(localStorage.getItem("students") || "[]");
-  </script>
-
 </body>
 </html>

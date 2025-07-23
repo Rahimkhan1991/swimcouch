@@ -1,150 +1,163 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+  <meta charset="UTF-8">
   <title>Finance Report</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     body {
       font-family: Arial, sans-serif;
-      padding: 15px;
-      background-color: #f6f8fa;
-      margin: 0;
+      padding: 20px;
+      background: #f0f4f8;
     }
 
     h2 {
-      color: #333;
-      font-size: 1.5rem;
-      margin-top: 0;
-    }
-
-    .card {
-      background: white;
-      padding: 15px;
-      border-radius: 8px;
-      margin-bottom: 15px;
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-    }
-
-    select {
-      padding: 6px;
-      border-radius: 4px;
+      color: #007bff;
       margin-bottom: 10px;
     }
 
+    .summary {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+
+    .summary div {
+      background: white;
+      padding: 15px 20px;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+      min-width: 150px;
+    }
+
     canvas {
-      margin-top: 20px;
-      max-width: 100%;
+      background: white;
+      padding: 10px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+      max-width: 400px;
+      margin-bottom: 20px;
+    }
+
+    .filter {
+      margin: 15px 0;
+    }
+
+    select {
+      padding: 8px;
+      border-radius: 6px;
+    }
+
+    .back-btn {
+      display: inline-block;
+      margin-bottom: 20px;
+      padding: 10px 20px;
+      background: #007bff;
+      color: white;
+      text-decoration: none;
+      border-radius: 8px;
     }
   </style>
 </head>
 <body>
-  <h2>Finance Report</h2>
 
-  <div class="card">
-    <label>Filter by:</label>
-    <select id="filter" onchange="loadFinanceSummary()">
-      <option value="all">All Time</option>
-      <option value="today">Today</option>
-      <option value="week">This Week</option>
-      <option value="month">This Month</option>
-      <option value="year">This Year</option>
+  <a class="back-btn" href="home.html">← Back</a>
+  <h2>📊 Finance Summary</h2>
+
+  <div class="filter">
+    <label for="monthFilter">Month: </label>
+    <select id="monthFilter">
+      <option value="">All</option>
+      <option value="01">January</option>
+      <option value="02">February</option>
+      <option value="03">March</option>
+      <option value="04">April</option>
+      <option value="05">May</option>
+      <option value="06">June</option>
+      <option value="07">July</option>
+      <option value="08">August</option>
+      <option value="09">September</option>
+      <option value="10">October</option>
+      <option value="11">November</option>
+      <option value="12">December</option>
     </select>
-
-    <h3>Summary</h3>
-    <p><strong>Total Fee Collected:</strong> <span id="totalIncome">Rp0</span></p>
-    <p><strong>Total Paid Amount:</strong> <span id="totalPaid">Rp0</span></p>
-    <p><strong>Total Balance:</strong> <span id="totalBalance">Rp0</span></p>
-
-    <canvas id="incomeChart" height="200"></canvas>
   </div>
 
-  <div style="text-align: center;">
-    <button onclick="location.href='home.html'"
-      style="background-color: #3498db; color: white; padding: 10px 20px; margin-right: 10px; border-radius: 10px;">🏠
-      Home</button>
-    <button onclick="history.back()"
-      style="background-color: #95a5a6; color: white; padding: 10px 20px; border-radius: 10px;">← Back</button>
+  <div class="summary" id="summary">
+    <!-- Totals will be injected here -->
   </div>
+
+  <canvas id="feeChart"></canvas>
 
   <script>
-    let chart;
+    const students = JSON.parse(localStorage.getItem('students')) || [];
+    const monthFilter = document.getElementById('monthFilter');
+    const summaryDiv = document.getElementById('summary');
 
-    function loadFinanceSummary() {
-      const feeRaw = localStorage.getItem("fees");
-      const studentRaw = localStorage.getItem("students");
-
-      const fees = feeRaw ? JSON.parse(feeRaw) : [];
-      const students = studentRaw ? JSON.parse(studentRaw) : [];
-
-      const filter = document.getElementById("filter").value;
-      const now = new Date();
-
-      let totalIncome = 0;
-
-      fees.forEach(fee => {
-        const date = new Date(fee.feeDate);
-        if (
-          filter === "today" && fee.feeDate === new Date().toISOString().split("T")[0] ||
-          filter === "week" && isSameWeek(date, now) ||
-          filter === "month" && date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear() ||
-          filter === "year" && date.getFullYear() === now.getFullYear() ||
-          filter === "all"
-        ) {
-          totalIncome += Number(fee.amount) || 0;
-        }
-      });
-
-      let totalPaid = 0;
-      let totalBalance = 0;
-
-      students.forEach(st => {
-        totalPaid += Number(st.paidAmount) || 0;
-        totalBalance += Number(st.balance) || 0;
-      });
-
-      document.getElementById("totalIncome").textContent = `Rp${totalIncome}`;
-      document.getElementById("totalPaid").textContent = `Rp${totalPaid}`;
-      document.getElementById("totalBalance").textContent = `Rp${totalBalance}`;
-
-      drawChart(totalIncome, totalPaid, totalBalance);
+    function formatMonth(dateStr) {
+      if (!dateStr) return '';
+      const d = new Date(dateStr);
+      return ('0' + (d.getMonth() + 1)).slice(-2);
     }
 
-    function isSameWeek(d1, d2) {
-      const start = new Date(d2);
-      start.setDate(d2.getDate() - d2.getDay());
-      const end = new Date(start);
-      end.setDate(start.getDate() + 7);
-      return d1 >= start && d1 < end;
+    function updateFinanceView(filterMonth = "") {
+      let totalExpected = 0;
+      let totalCollected = 0;
+
+      const filteredStudents = students.filter(s => {
+        if (filterMonth === "") return true;
+        return formatMonth(s.date) === filterMonth;
+      });
+
+      filteredStudents.forEach(s => {
+        const expected = parseFloat(s.totalFee) || 0;
+        const collected = parseFloat(s.initialPayment) || 0;
+        totalExpected += expected;
+        totalCollected += collected;
+      });
+
+      const totalPending = totalExpected - totalCollected;
+
+      summaryDiv.innerHTML = `
+        <div><strong>Total Expected:</strong><br>₹ ${totalExpected.toFixed(2)}</div>
+        <div><strong>Total Collected:</strong><br>₹ ${totalCollected.toFixed(2)}</div>
+        <div><strong>Pending Amount:</strong><br>₹ ${totalPending.toFixed(2)}</div>
+      `;
+
+      drawChart(totalCollected, totalPending);
     }
 
-    function drawChart(income, paid, balance) {
-      const ctx = document.getElementById("incomeChart").getContext("2d");
+    function drawChart(collected, pending) {
+      const ctx = document.getElementById('feeChart').getContext('2d');
+      if (window.feeChart) window.feeChart.destroy();
 
-      if (chart) chart.destroy();
-
-      chart = new Chart(ctx, {
+      window.feeChart = new Chart(ctx, {
         type: 'pie',
         data: {
-          labels: ['Fee Collected', 'Paid', 'Balance'],
+          labels: ['Collected', 'Pending'],
           datasets: [{
-            label: 'Amount (Rp)',
-            data: [income, paid, balance],
-            backgroundColor: ['#2ecc71', '#3498db', '#e74c3c'],
+            data: [collected, pending],
+            backgroundColor: ['#28a745', '#dc3545']
           }]
         },
         options: {
           responsive: true,
           plugins: {
             legend: {
-              position: 'bottom',
+              position: 'bottom'
             }
           }
         }
       });
     }
 
-    window.onload = loadFinanceSummary;
+    monthFilter.addEventListener('change', () => {
+      updateFinanceView(monthFilter.value);
+    });
+
+    updateFinanceView();
   </script>
 </body>
 </html>

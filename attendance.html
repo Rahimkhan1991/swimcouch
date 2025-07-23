@@ -23,8 +23,8 @@
       padding: 8px;
       font-size: 16px;
       margin-right: 5px;
+      border: 1px solid #ddd;
       border-radius: 4px;
-      border: 1px solid #ccc;
     }
 
     .student-list {
@@ -40,7 +40,6 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      flex-wrap: wrap;
     }
 
     .student-name {
@@ -49,8 +48,8 @@
     }
 
     .mark-present {
-      margin-top: 5px;
       transform: scale(1.3);
+      margin-left: 10px;
     }
 
     .btn {
@@ -61,11 +60,7 @@
       font-size: 16px;
       border-radius: 5px;
       cursor: pointer;
-      margin: 10px 5px 0 0;
-    }
-
-    .btn:active {
-      opacity: 0.8;
+      margin-top: 10px;
     }
 
     .back-btn {
@@ -75,25 +70,18 @@
     .top-controls {
       display: flex;
       flex-wrap: wrap;
-      gap: 8px;
+      gap: 10px;
       margin-bottom: 10px;
       align-items: center;
     }
 
-    .status-indicator {
+    .status-message {
+      background: #d4edda;
+      color: #155724;
+      padding: 10px;
+      margin-top: 10px;
+      border-radius: 5px;
       display: inline-block;
-      width: 12px;
-      height: 12px;
-      border-radius: 50%;
-      margin-left: 8px;
-    }
-
-    .present {
-      background-color: #28a745;
-    }
-
-    .absent {
-      background-color: #dc3545;
     }
 
     @media (max-width: 600px) {
@@ -101,14 +89,10 @@
         flex-direction: column;
         align-items: flex-start;
       }
-
-      .student-name {
-        margin-bottom: 5px;
-      }
-
-      .top-controls {
-        flex-direction: column;
-        align-items: flex-start;
+      
+      .mark-present {
+        margin-left: 0;
+        margin-top: 5px;
       }
     }
   </style>
@@ -117,12 +101,12 @@
 
   <header>
     <h2>Attendance</h2>
-    <button class="btn back-btn" onclick="goBack()">Back</button>
+    <button class="btn back-btn" onclick="window.history.back()">Back</button>
   </header>
 
   <div class="top-controls">
     <input type="date" id="attendanceDate">
-    <select id="dayFilter" onchange="filterStudents()">
+    <select id="dayFilter">
       <option value="">All Days</option>
       <option value="Monday">Monday</option>
       <option value="Tuesday">Tuesday</option>
@@ -132,153 +116,125 @@
       <option value="Saturday">Saturday</option>
       <option value="Sunday">Sunday</option>
     </select>
-    <label><input type="checkbox" id="markAllCheckbox" onchange="markAll(this)"> Mark All Present</label>
+    <label><input type="checkbox" id="markAll" onchange="markAllPresent()"> Mark All Present</label>
   </div>
 
   <div id="studentList" class="student-list">
-    <!-- Students will be populated here -->
+    <!-- Students will load here -->
   </div>
 
-  <button class="btn" onclick="submitAttendance()">Submit Attendance</button>
+  <button class="btn" onclick="saveAttendance()">Submit Attendance</button>
 
   <script>
-    let students = [];
-    let currentAttendance = [];
-
-    function goBack() {
-      window.history.back();
-    }
-
+    // Initialize with today's date
+    document.getElementById('attendanceDate').valueAsDate = new Date();
+    
+    // Load students from localStorage
     function loadStudents() {
       try {
-        const stored = JSON.parse(localStorage.getItem('students')) || [];
-        students = stored;
+        const students = JSON.parse(localStorage.getItem('students')) || [];
+        const selectedDay = document.getElementById('dayFilter').value;
         
-        // Load today's attendance if it exists
-        const date = document.getElementById("attendanceDate").value;
-        const allAttendance = JSON.parse(localStorage.getItem("attendance")) || [];
-        currentAttendance = allAttendance.filter(a => a.date === date);
+        // Filter by day if selected
+        const filteredStudents = selectedDay 
+          ? students.filter(s => s.day === selectedDay || (s.days && s.days.includes(selectedDay)))
+          : students;
         
-        filterStudents();
-      } catch (e) {
-        console.error("Error loading students:", e);
-        showMessage("Error loading student data");
+        displayStudents(filteredStudents);
+      } catch (error) {
+        showMessage('Error loading students: ' + error.message);
       }
     }
-
-    function filterStudents() {
-      const selectedDay = document.getElementById("dayFilter").value;
-      const listDiv = document.getElementById("studentList");
-      listDiv.innerHTML = "";
-
-      const filtered = students.filter(s => 
-        !selectedDay || 
-        s.day === selectedDay || 
-        (s.days && s.days.includes(selectedDay))
-        .sort((a, b) => a.name.localeCompare(b.name));
-
-      if (filtered.length === 0) {
-        listDiv.innerHTML = "<p>No students found for selected day.</p>";
-        return;
-      }
-
-      filtered.forEach(student => {
-        const card = document.createElement("div");
-        card.className = "student-card";
-
-        const name = document.createElement("div");
-        name.className = "student-name";
-        name.textContent = student.name;
-        
-        // Add status indicator
-        const status = document.createElement("span");
-        status.className = "status-indicator " + 
-          (currentAttendance.some(a => a.studentId === student.id) ? "present" : "absent");
-        name.appendChild(status);
-
-        const checkbox = document.createElement("input");
-        checkbox.type = "checkbox";
-        checkbox.className = "mark-present";
-        checkbox.dataset.id = student.id;
-        
-        // Check if student is already marked present
-        if (currentAttendance.some(a => a.studentId === student.id)) {
-          checkbox.checked = true;
-        }
-
-        card.appendChild(name);
-        card.appendChild(checkbox);
-        listDiv.appendChild(card);
-      });
+    
+    // Display students in the list
+    function displayStudents(students) {
+      const studentList = document.getElementById('studentList');
+      studentList.innerHTML = '';
       
-      // Update mark all checkbox
-      const allChecked = filtered.length > 0 && 
-        filtered.every(s => currentAttendance.some(a => a.studentId === s.id));
-      document.getElementById("markAllCheckbox").checked = allChecked;
-    }
-
-    function markAll(masterCheckbox) {
-      document.querySelectorAll('.mark-present').forEach(cb => {
-        cb.checked = masterCheckbox.checked;
-      });
-    }
-
-    function submitAttendance() {
-      const date = document.getElementById("attendanceDate").value;
-      if (!date) {
-        showMessage("Please select a date.");
+      if (students.length === 0) {
+        studentList.innerHTML = '<p>No students found</p>';
         return;
       }
-
+      
+      // Load existing attendance for the selected date
+      const attendanceDate = document.getElementById('attendanceDate').value;
+      const attendanceRecords = JSON.parse(localStorage.getItem('attendance')) || [];
+      const todaysAttendance = attendanceRecords.filter(record => record.date === attendanceDate);
+      
+      students.forEach(student => {
+        const card = document.createElement('div');
+        card.className = 'student-card';
+        
+        card.innerHTML = `
+          <div class="student-name">${student.name}</div>
+          <input type="checkbox" class="mark-present" data-id="${student.id}" 
+            ${todaysAttendance.some(record => record.studentId === student.id) ? 'checked' : ''}>
+        `;
+        
+        studentList.appendChild(card);
+      });
+    }
+    
+    // Mark all students present/absent
+    function markAllPresent() {
+      const checkAll = document.getElementById('markAll').checked;
+      document.querySelectorAll('.mark-present').forEach(checkbox => {
+        checkbox.checked = checkAll;
+      });
+    }
+    
+    // Save attendance to localStorage
+    function saveAttendance() {
       try {
-        // Get all attendance records except today's
-        let allAttendance = JSON.parse(localStorage.getItem("attendance")) || [];
-        allAttendance = allAttendance.filter(a => a.date !== date);
+        const date = document.getElementById('attendanceDate').value;
+        if (!date) {
+          showMessage('Please select a date');
+          return;
+        }
         
-        // Add today's attendance
-        const presentIds = Array.from(document.querySelectorAll(".mark-present"))
-          .filter(cb => cb.checked)
-          .map(cb => ({
-            date: date,
-            studentId: cb.dataset.id,
-            status: "Present"
-          }));
+        const checkboxes = document.querySelectorAll('.mark-present');
+        const attendanceRecords = JSON.parse(localStorage.getItem('attendance')) || [];
         
-        allAttendance = [...allAttendance, ...presentIds];
-        localStorage.setItem("attendance", JSON.stringify(allAttendance));
+        // Remove existing records for this date
+        const updatedRecords = attendanceRecords.filter(record => record.date !== date);
         
-        showMessage(`Attendance saved for ${formatDate(date)}`);
-        currentAttendance = presentIds;
-        filterStudents(); // Refresh the view
-      } catch (e) {
-        console.error("Error saving attendance:", e);
-        showMessage("Error saving attendance");
+        // Add new records for present students
+        checkboxes.forEach(checkbox => {
+          if (checkbox.checked) {
+            updatedRecords.push({
+              date: date,
+              studentId: checkbox.dataset.id,
+              status: 'Present'
+            });
+          }
+        });
+        
+        localStorage.setItem('attendance', JSON.stringify(updatedRecords));
+        showMessage('Attendance saved successfully!');
+      } catch (error) {
+        showMessage('Error saving attendance: ' + error.message);
       }
     }
-
-    function formatDate(dateString) {
-      const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-      return new Date(dateString).toLocaleDateString(undefined, options);
-    }
-
-    function showMessage(msg) {
+    
+    // Show status message
+    function showMessage(message) {
+      const msgElement = document.createElement('div');
+      msgElement.className = 'status-message';
+      msgElement.textContent = message;
+      
       const existingMsg = document.querySelector('.status-message');
       if (existingMsg) existingMsg.remove();
       
-      const msgDiv = document.createElement('div');
-      msgDiv.textContent = msg;
-      msgDiv.className = 'status-message';
-      msgDiv.style = "background: #d4edda; color: #155724; padding: 10px; margin-top: 10px; border-radius: 5px;";
-      document.body.appendChild(msgDiv);
-      setTimeout(() => msgDiv.remove(), 3000);
+      document.body.appendChild(msgElement);
+      setTimeout(() => msgElement.remove(), 3000);
     }
-
-    window.onload = () => {
-      const today = new Date().toISOString().split("T")[0];
-      document.getElementById("attendanceDate").value = today;
-      document.getElementById("attendanceDate").addEventListener("change", loadStudents);
-      loadStudents();
-    };
+    
+    // Event listeners
+    document.getElementById('dayFilter').addEventListener('change', loadStudents);
+    document.getElementById('attendanceDate').addEventListener('change', loadStudents);
+    
+    // Initial load
+    loadStudents();
   </script>
 </body>
 </html>

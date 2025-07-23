@@ -68,19 +68,31 @@
       overflow-y: auto;
     }
 
-    .student-info {
-      background: #f0f9ff;
+    .finance-summary {
+      margin-bottom: 20px;
+    }
+
+    .student-finance-list {
+      margin-top: 20px;
+    }
+
+    .student-finance-item {
       padding: 10px;
-      margin-bottom: 15px;
-      border-radius: 8px;
+      border-bottom: 1px solid #eee;
+      display: flex;
+      justify-content: space-between;
     }
 
-    .attendance-history {
-      margin-top: 15px;
+    .student-finance-item:last-child {
+      border-bottom: none;
     }
 
-    .attendance-history ul {
-      padding-left: 20px;
+    .balance-positive {
+      color: #28a745;
+    }
+
+    .balance-negative {
+      color: #dc3545;
     }
 
     /* Mobile-specific adjustments */
@@ -118,13 +130,22 @@
 
   <div id="finance" class="tab-content">
     <div class="card">
-      <h3>Finance Summary</h3>
-      <p><strong>Today's Income:</strong> <span id="todayIncome">Rp0</span></p>
-      <p><strong>This Week's Income:</strong> <span id="weekIncome">Rp0</span></p>
-      <p><strong>This Month's Income:</strong> <span id="monthIncome">Rp0</span></p>
-      <hr style="margin: 15px 0;">
-      <p><strong>Total Paid Amount:</strong> <span id="totalPaid">Rp0</span></p>
-      <p><strong>Total Balance Remaining:</strong> <span id="totalBalance">Rp0</span></p>
+      <div class="finance-summary">
+        <h3>Finance Summary</h3>
+        <p><strong>Today's Income:</strong> <span id="todayIncome">Rp0</span></p>
+        <p><strong>This Week's Income:</strong> <span id="weekIncome">Rp0</span></p>
+        <p><strong>This Month's Income:</strong> <span id="monthIncome">Rp0</span></p>
+        <hr style="margin: 15px 0;">
+        <p><strong>Total Paid Amount:</strong> <span id="totalPaid">Rp0</span></p>
+        <p><strong>Total Balance Remaining:</strong> <span id="totalBalance">Rp0</span></p>
+      </div>
+
+      <div class="student-finance-list">
+        <h3>Student Fee Details</h3>
+        <div id="studentFinanceDetails">
+          <!-- Student fee details will be loaded here -->
+        </div>
+      </div>
     </div>
   </div>
 
@@ -141,57 +162,53 @@
       document.querySelectorAll(".tab-content").forEach(tab => tab.classList.remove("active"));
       document.querySelector(`[onclick="switchTab('${tabId}')"]`).classList.add("active");
       document.getElementById(tabId).classList.add("active");
+      
+      // Refresh finance data when switching to finance tab
+      if (tabId === 'finance') {
+        loadFinanceSummary();
+        loadStudentFinanceDetails();
+      }
     }
 
-    // Load student list
+    // Load student list (unchanged from your working version)
     function loadStudents() {
       try {
         const students = JSON.parse(localStorage.getItem("students") || []);
         const dropdown = document.getElementById("studentDropdown");
         dropdown.innerHTML = '<option value="">--Select Student--</option>';
 
-        // Sort students alphabetically
-        students.sort((a, b) => a.name.localeCompare(b.name))
-          .forEach(student => {
-            const opt = document.createElement("option");
-            opt.value = student.name;
-            opt.textContent = `${student.name} (Rp${student.balance || 0} balance)`;
-            dropdown.appendChild(opt);
-          });
+        students.forEach(student => {
+          const opt = document.createElement("option");
+          opt.value = student.name;
+          opt.textContent = `${student.name} (Rp${student.balance} balance)`;
+          dropdown.appendChild(opt);
+        });
       } catch (e) {
-        console.error("Error loading students:", e);
-        showMessage("Failed to load student data");
+        console.error("Error parsing students data:", e);
       }
     }
 
+    // Show attendance history (unchanged from your working version)
     function showAttendanceHistory() {
       const selectedStudentName = document.getElementById("studentDropdown").value;
+      const attendance = JSON.parse(localStorage.getItem("attendance") || []);
+      const students = JSON.parse(localStorage.getItem("students") || []);
+
       if (!selectedStudentName) {
         document.getElementById("attendanceResult").innerHTML = "";
         return;
       }
 
-      try {
-        const attendance = JSON.parse(localStorage.getItem("attendance") || []);
-        const students = JSON.parse(localStorage.getItem("students") || []);
-        
-        const student = students.find(s => s.name === selectedStudentName);
-        if (!student) {
-          document.getElementById("attendanceResult").innerHTML = "<p>Student not found</p>";
-          return;
-        }
+      const student = students.find(s => s.name === selectedStudentName);
+      const filtered = attendance.filter(a => a.name === selectedStudentName);
 
-        // Filter attendance by student name
-        const studentAttendance = attendance
-          .filter(a => a.name === selectedStudentName)
-          .sort((a, b) => new Date(b.date) - new Date(a.date)); // Newest first
+      let html = "";
 
-        // Build student info
-        let html = `<div class="student-info">
+      if (student) {
+        html += `<div style="background: #f0f9ff; padding: 10px; margin-bottom: 15px; border-radius: 8px;">
           <strong>Student Details:</strong><br>`;
-        
         if (student.image) {
-          html += `<img src="${student.image}" alt="${student.name}" style="width: 50px; height: 50px; border-radius: 50%; margin-right: 10px;">`;
+          html += `<img src="${student.image}" alt="${student.name}" style="width: 50px; height: 50px; border-radius: 50%; vertical-align: middle; margin-right: 5px;">`;
         }
 
         const total = parseInt(student.totalFee || 0);
@@ -199,46 +216,32 @@
         const balance = total - paid;
 
         html += `Name: ${student.name}<br>
-          Phone: ${student.phone || 'N/A'}<br>
-          Days: ${student.days ? student.days.join(', ') : student.day || 'N/A'}<br>
+          Phone: ${student.phone}<br>
+          Days: ${student.days ? student.days.join(', ') : student.day}<br>
           Total Fee: Rp${total}<br>
           Paid: Rp${paid}<br>
           Balance: Rp${balance}
         </div>`;
-
-        // Build attendance history
-        if (studentAttendance.length > 0) {
-          html += `<div class="attendance-history">
-            <h4>Attendance History (${studentAttendance.length} sessions):</h4>
-            <ul>`;
-          
-          studentAttendance.forEach(a => {
-            html += `<li>${formatDate(a.date)} - ${a.status}</li>`;
-          });
-          
-          html += `</ul></div>`;
-        } else {
-          html += "<p>No attendance records found for this student.</p>";
-        }
-
-        document.getElementById("attendanceResult").innerHTML = html;
-      } catch (e) {
-        console.error("Error showing attendance:", e);
-        showMessage("Error loading attendance data");
       }
+
+      if (filtered.length > 0) {
+        html += "<h4>Attendance History:</h4><ul>";
+        filtered.forEach(a => {
+          html += `<li>${a.date} - ${a.status}</li>`;
+        });
+        html += "</ul>";
+      } else {
+        html += "<p>No attendance records found for this student.</p>";
+      }
+
+      document.getElementById("attendanceResult").innerHTML = html;
     }
 
-    // Helper to format dates
-    function formatDate(dateString) {
-      const options = { year: 'numeric', month: 'short', day: 'numeric' };
-      return new Date(dateString).toLocaleDateString(undefined, options);
-    }
-
-    // Load finance summary
+    // Enhanced Finance Summary with Student Details
     function loadFinanceSummary() {
       try {
-        const fees = JSON.parse(localStorage.getItem("fees") || []);
-        const students = JSON.parse(localStorage.getItem("students") || []);
+        const fees = JSON.parse(localStorage.getItem("fees") || "[]");
+        const students = JSON.parse(localStorage.getItem("students") || "[]");
 
         const today = new Date().toISOString().split("T")[0];
         const now = new Date();
@@ -249,7 +252,7 @@
         let totalPaidAmount = 0;
         let totalBalance = 0;
 
-        // Calculate from fees
+        // Calculate income from fees (additional payments)
         fees.forEach(fee => {
           const feeDate = new Date(fee.feeDate);
           const amount = Number(fee.amount) || 0;
@@ -259,10 +262,15 @@
           if (feeDate >= startOfMonth) monthTotal += amount;
         });
 
-        // Calculate from students
+        // Calculate from student records (initial payments + balances)
         students.forEach(student => {
           totalPaidAmount += Number(student.paidAmount) || 0;
           totalBalance += Number(student.balance) || 0;
+        });
+
+        // Update additional fees paid through fee collection
+        fees.forEach(fee => {
+          totalPaidAmount += Number(fee.amount) || 0;
         });
 
         // Update DOM
@@ -272,27 +280,65 @@
         document.getElementById("totalPaid").textContent = `Rp${totalPaidAmount}`;
         document.getElementById("totalBalance").textContent = `Rp${totalBalance}`;
       } catch (e) {
-        console.error("Error loading finance:", e);
+        console.error("Error loading finance summary:", e);
       }
     }
 
-    // Show status message
-    function showMessage(message) {
-      const msgElement = document.createElement('div');
-      msgElement.className = 'status-message';
-      msgElement.textContent = message;
-      
-      const existingMsg = document.querySelector('.status-message');
-      if (existingMsg) existingMsg.remove();
-      
-      document.body.appendChild(msgElement);
-      setTimeout(() => msgElement.remove(), 3000);
+    // New function to load detailed student finance information
+    function loadStudentFinanceDetails() {
+      try {
+        const students = JSON.parse(localStorage.getItem("students") || []);
+        const fees = JSON.parse(localStorage.getItem("fees") || []);
+        const container = document.getElementById("studentFinanceDetails");
+        container.innerHTML = "";
+
+        if (students.length === 0) {
+          container.innerHTML = "<p>No student records found.</p>";
+          return;
+        }
+
+        // Sort students by name
+        students.sort((a, b) => a.name.localeCompare(b.name));
+
+        students.forEach(student => {
+          const studentFees = fees.filter(fee => fee.studentId === student.id);
+          const totalFee = Number(student.totalFee) || 0;
+          const initialPayment = Number(student.paidAmount) || 0;
+          const additionalPayments = studentFees.reduce((sum, fee) => sum + (Number(fee.amount) || 0, 0);
+          const totalPaid = initialPayment + additionalPayments;
+          const balance = totalFee - totalPaid;
+
+          const item = document.createElement("div");
+          item.className = "student-finance-item";
+          
+          item.innerHTML = `
+            <div>
+              <strong>${student.name}</strong><br>
+              <small>Phone: ${student.phone || 'N/A'}</small>
+            </div>
+            <div style="text-align: right;">
+              <div>Fee: Rp${totalFee}</div>
+              <div>Paid: Rp${totalPaid}</div>
+              <div class="${balance >= 0 ? 'balance-positive' : 'balance-negative'}">
+                Balance: Rp${balance}
+              </div>
+            </div>
+          `;
+          
+          container.appendChild(item);
+        });
+      } catch (e) {
+        console.error("Error loading student finance details:", e);
+        document.getElementById("studentFinanceDetails").innerHTML = 
+          "<p>Error loading student finance data.</p>";
+      }
     }
 
     // Initialize
     window.onload = () => {
       loadStudents();
       loadFinanceSummary();
+      loadStudentFinanceDetails();
     };
   </script>
 </body>

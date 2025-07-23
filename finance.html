@@ -1,136 +1,108 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8">
   <title>Finance Report</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     body {
       font-family: Arial, sans-serif;
-      background: #f0f4f8;
+      padding: 15px;
+      background-color: #f6f8fa;
       margin: 0;
-      padding: 20px;
     }
 
     h2 {
-      color: #28a745;
-      margin-bottom: 20px;
+      color: #333;
+      font-size: 1.5rem;
+      margin-top: 0;
     }
 
     .card {
-      background: #fff;
+      background: white;
       padding: 15px;
-      border-radius: 12px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-      margin-bottom: 20px;
+      border-radius: 8px;
+      margin-bottom: 15px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
     }
 
-    .card h3 {
-      margin: 0;
-      font-size: 18px;
-      color: #333;
-    }
-
-    .amount {
-      font-size: 24px;
-      color: #28a745;
-      margin-top: 10px;
-      font-weight: bold;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 20px;
-    }
-
-    th, td {
-      padding: 10px;
-      text-align: left;
-      border-bottom: 1px solid #ddd;
-    }
-
-    th {
-      background-color: #28a745;
-      color: white;
-    }
-
+    /* Mobile-specific adjustments */
     @media (max-width: 600px) {
-      h3 { font-size: 16px; }
-      .amount { font-size: 20px; }
+      body {
+        padding: 10px;
+      }
+      .card {
+        padding: 10px;
+      }
     }
   </style>
 </head>
 <body>
-
   <h2>Finance Report</h2>
 
   <div class="card">
-    <h3>Today's Collection</h3>
-    <div class="amount" id="todayAmount">₹0</div>
+    <h3>Finance Summary</h3>
+    <p><strong>Today's Income:</strong> <span id="todayIncome">Rp0</span></p>
+    <p><strong>This Week's Income:</strong> <span id="weekIncome">Rp0</span></p>
+    <p><strong>This Month's Income:</strong> <span id="monthIncome">Rp0</span></p>
+    <hr style="margin: 15px 0;">
+    <p><strong>Total Paid Amount:</strong> <span id="totalPaid">Rp0</span></p>
+    <p><strong>Total Balance Remaining:</strong> <span id="totalBalance">Rp0</span></p>
   </div>
 
-  <div class="card">
-    <h3>This Week's Collection</h3>
-    <div class="amount" id="weekAmount">₹0</div>
-  </div>
-
-  <div class="card">
-    <h3>This Month's Collection</h3>
-    <div class="amount" id="monthAmount">₹0</div>
-  </div>
-
-  <div class="card">
-    <h3>Total Collection</h3>
-    <div class="amount" id="totalAmount">₹0</div>
-  </div>
-
-  <div class="card">
-    <h3>Recent Payments</h3>
-    <table>
-      <thead>
-        <tr>
-          <th>Date</th>
-          <th>Student</th>
-          <th>Amount</th>
-        </tr>
-      </thead>
-      <tbody id="paymentList">
-        <tr><td colspan="3">No records</td></tr>
-      </tbody>
-    </table>
+  <div style="text-align: center; margin-top: 20px;">
+    <button onclick="location.href='home.html'"
+      style="background-color: #3498db; color: white; border: none; padding: 10px 20px; margin-right: 10px; border-radius: 10px; cursor: pointer;">🏠 Home</button>
+    <button onclick="history.back()"
+      style="background-color: #95a5a6; color: white; border: none; padding: 10px 20px; border-radius: 10px; cursor: pointer;">← Back</button>
   </div>
 
   <script>
-    const payments = JSON.parse(localStorage.getItem("payments") || "[]");
+    // Load finance summary
+    function loadFinanceSummary() {
+      try {
+        const fees = JSON.parse(localStorage.getItem("fees") || []);
+        const students = JSON.parse(localStorage.getItem("students") || []);
 
-    const today = new Date();
-    const todayStr = today.toISOString().split("T")[0];
-    const weekStart = new Date(today);
-    weekStart.setDate(today.getDate() - today.getDay());
-    const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+        const today = new Date().toISOString().split("T")[0];
+        const now = new Date();
+        const startOfWeek = new Date(now.setDate(now.getDate() - now.getDay()));
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
-    let todaySum = 0, weekSum = 0, monthSum = 0, totalSum = 0;
+        let todayTotal = 0, weekTotal = 0, monthTotal = 0;
+        let totalPaidAmount = 0;
+        let totalBalance = 0;
 
-    const rows = [];
+        // Calculate from fees
+        fees.forEach(fee => {
+          const feeDate = new Date(fee.feeDate);
+          const amount = Number(fee.amount) || 0;
 
-    payments.reverse().forEach(p => {
-      const date = new Date(p.date);
-      const amount = parseFloat(p.amount || 0);
-      totalSum += amount;
+          if (fee.feeDate === today) todayTotal += amount;
+          if (feeDate >= startOfWeek) weekTotal += amount;
+          if (feeDate >= startOfMonth) monthTotal += amount;
+        });
 
-      if (p.date === todayStr) todaySum += amount;
-      if (date >= weekStart) weekSum += amount;
-      if (date >= monthStart) monthSum += amount;
+        // Calculate from students
+        students.forEach(student => {
+          totalPaidAmount += Number(student.paidAmount) || 0;
+          totalBalance += Number(student.balance) || 0;
+        });
 
-      rows.push(`<tr><td>${p.date}</td><td>${p.name}</td><td>₹${amount}</td></tr>`);
-    });
+        // Update DOM
+        document.getElementById("todayIncome").textContent = `Rp${todayTotal}`;
+        document.getElementById("weekIncome").textContent = `Rp${weekTotal}`;
+        document.getElementById("monthIncome").textContent = `Rp${monthTotal}`;
+        document.getElementById("totalPaid").textContent = `Rp${totalPaidAmount}`;
+        document.getElementById("totalBalance").textContent = `Rp${totalBalance}`;
+      } catch (e) {
+        console.error("Error loading finance:", e);
+      }
+    }
 
-    document.getElementById("todayAmount").textContent = "₹" + todaySum;
-    document.getElementById("weekAmount").textContent = "₹" + weekSum;
-    document.getElementById("monthAmount").textContent = "₹" + monthSum;
-    document.getElementById("totalAmount").textContent = "₹" + totalSum;
-    document.getElementById("paymentList").innerHTML = rows.length ? rows.join("") : "<tr><td colspan='3'>No records</td></tr>";
+    // Initialize
+    window.onload = () => {
+      loadFinanceSummary();
+    };
   </script>
 </body>
 </html>

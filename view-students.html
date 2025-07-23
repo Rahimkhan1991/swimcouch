@@ -1,3 +1,4 @@
+<!-- Save this as view-students.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -65,9 +66,6 @@
     }
 
     @media (max-width: 600px) {
-      .student-card {
-        flex-direction: column;
-      }
       .student-top {
         flex-direction: column;
         align-items: flex-start;
@@ -81,24 +79,22 @@
   <div id="studentList"></div>
 
   <script>
-    function getFeeCollectionByPhone(phone) {
-      const feeRecords = JSON.parse(localStorage.getItem('feeRecords')) || [];
-      return feeRecords
-        .filter(record => record.phone === phone)
-        .reduce((sum, r) => sum + Number(r.amount || 0), 0);
+    function getFees() {
+      return JSON.parse(localStorage.getItem("fees")) || [];
     }
 
     function renderStudents() {
-      const students = JSON.parse(localStorage.getItem('students')) || [];
+      const students = JSON.parse(localStorage.getItem("students")) || [];
+      const fees = getFees();
       const container = document.getElementById("studentList");
       container.innerHTML = "";
 
       students.forEach((student, index) => {
-        const feeCollected = getFeeCollectionByPhone(student.phone || "");
-        const initialPaid = Number(student.initialPayment || 0);
-        const totalFee = Number(student.totalFee || 0);
-        const totalPaid = initialPaid + feeCollected;
-        const pendingFee = totalFee - totalPaid;
+        const studentFees = fees.filter(f => f.studentId == student.id);
+        const feeCollected = studentFees.reduce((sum, f) => sum + Number(f.amount || 0), 0);
+        const initial = Number(student.initialPayment || 0);
+        const totalPaid = initial + feeCollected;
+        const pending = Math.max(0, Number(student.totalFee) - totalPaid);
 
         const card = document.createElement("div");
         card.className = "student-card";
@@ -107,7 +103,7 @@
         top.className = "student-top";
 
         const img = document.createElement("img");
-        img.src = student.image || "";
+        img.src = student.image || "https://via.placeholder.com/60";
         img.onerror = () => img.src = "https://via.placeholder.com/60";
         top.appendChild(img);
 
@@ -116,13 +112,12 @@
         info.innerHTML = `
           <strong>${student.name}</strong><br>
           📞 ${student.phone}<br>
-          🏷️ ${student.day || "-"}<br>
-          💰 Total Fee: ${totalFee}<br>
-          ✅ Paid: ${totalPaid}<br>
-          ❌ Pending: ${pendingFee}
+          📅 ${student.day || "-"}<br>
+          💰 Total: Rp${student.totalFee}<br>
+          ✅ Paid: Rp${totalPaid}<br>
+          ❌ Pending: Rp${pending}
         `;
         top.appendChild(info);
-
         card.appendChild(top);
 
         const actions = document.createElement("div");
@@ -137,7 +132,7 @@
         deleteBtn.className = "delete-btn";
         deleteBtn.textContent = "Delete";
         deleteBtn.onclick = () => {
-          if (confirm("Are you sure to delete?")) {
+          if (confirm("Are you sure to delete this student?")) {
             students.splice(index, 1);
             localStorage.setItem("students", JSON.stringify(students));
             renderStudents();
@@ -147,35 +142,33 @@
         actions.appendChild(editBtn);
         actions.appendChild(deleteBtn);
         card.appendChild(actions);
-
         container.appendChild(card);
       });
     }
 
     function startEdit(card, student, index) {
-      const students = JSON.parse(localStorage.getItem("students")) || [];
       card.innerHTML = `
-        <label>Name: <input type="text" value="${student.name}" id="editName"></label>
-        <label>Phone: <input type="text" value="${student.phone}" id="editPhone"></label>
-        <label>Day: <input type="text" value="${student.day}" id="editDay"></label>
-        <label>Total Fee: <input type="number" value="${student.totalFee}" id="editTotalFee"></label>
-        <label>Initial Payment: <input type="number" value="${student.initialPayment}" id="editInitialPayment"></label>
-        <label>Image URL: <input type="text" value="${student.image}" id="editImage"></label>
+        <label>Name: <input type="text" id="editName" value="${student.name}"></label>
+        <label>Phone: <input type="text" id="editPhone" value="${student.phone}"></label>
+        <label>Day: <input type="text" id="editDay" value="${student.day}"></label>
+        <label>Total Fee: <input type="number" id="editTotalFee" value="${student.totalFee}"></label>
+        <label>Initial Payment: <input type="number" id="editInitialPayment" value="${student.initialPayment}"></label>
+        <label>Image URL/Base64: <input type="text" id="editImage" value="${student.image}"></label>
         <button class="save-btn" onclick="saveEdit(${index})">Save</button>
       `;
     }
 
     function saveEdit(index) {
       const students = JSON.parse(localStorage.getItem("students")) || [];
-      const updated = {
-        name: document.getElementById("editName").value,
-        phone: document.getElementById("editPhone").value,
+      students[index] = {
+        ...students[index],
+        name: document.getElementById("editName").value.trim(),
+        phone: document.getElementById("editPhone").value.trim(),
         day: document.getElementById("editDay").value,
-        totalFee: Number(document.getElementById("editTotalFee").value),
-        initialPayment: Number(document.getElementById("editInitialPayment").value),
+        totalFee: parseFloat(document.getElementById("editTotalFee").value),
+        initialPayment: parseFloat(document.getElementById("editInitialPayment").value),
         image: document.getElementById("editImage").value
       };
-      students[index] = updated;
       localStorage.setItem("students", JSON.stringify(students));
       renderStudents();
     }

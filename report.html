@@ -3,36 +3,35 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Attendance Report</title>
+  <title>Reports</title>
   <style>
     body {
       font-family: 'Arial', sans-serif;
-      background-color: #f4f6f8;
+      background-color: #f0f4f8;
       margin: 0;
       padding: 20px;
     }
 
     h2 {
       color: #007bff;
-      text-align: center;
-      margin-bottom: 20px;
+      margin-top: 30px;
+      margin-bottom: 10px;
     }
 
-    .report-container {
-      max-width: 100%;
-      overflow-x: auto;
+    .section {
+      margin-bottom: 40px;
     }
 
     table {
-      border-collapse: collapse;
       width: 100%;
+      border-collapse: collapse;
       background: #fff;
-      box-shadow: 0 0 10px rgba(0,0,0,0.05);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
     }
 
     th, td {
-      border: 1px solid #ddd;
       padding: 10px;
+      border: 1px solid #ddd;
       font-size: 14px;
       text-align: center;
     }
@@ -45,12 +44,12 @@
     }
 
     tr:nth-child(even) {
-      background-color: #f2f2f2;
+      background-color: #f9f9f9;
     }
 
     .back-btn {
       display: inline-block;
-      margin-bottom: 15px;
+      margin-bottom: 20px;
       padding: 8px 16px;
       background: #28a745;
       color: white;
@@ -59,9 +58,15 @@
     }
 
     @media (max-width: 600px) {
-      table, th, td {
-        font-size: 12px;
+      body {
+        padding: 10px;
       }
+
+      th, td {
+        font-size: 12px;
+        padding: 8px;
+      }
+
       h2 {
         font-size: 18px;
       }
@@ -70,49 +75,92 @@
 </head>
 <body>
   <a href="index.html" class="back-btn">← Back</a>
-  <h2>Attendance Report</h2>
-  <div class="report-container">
-    <table id="reportTable">
-      <thead>
-        <tr>
-          <th>Date</th>
-          <th>Student Name</th>
-          <th>Day</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
+
+  <!-- Attendance Report Section -->
+  <div class="section">
+    <h2>📅 Attendance Report</h2>
+    <div class="table-container">
+      <table id="attendanceTable">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Student Name</th>
+            <th>Assigned Day</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Financial Report Section -->
+  <div class="section">
+    <h2>💰 Financial Report</h2>
+    <div class="table-container">
+      <table id="financialTable">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Total Fee</th>
+            <th>Paid</th>
+            <th>Pending</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
   </div>
 
   <script>
     const students = JSON.parse(localStorage.getItem("students")) || [];
     const attendance = JSON.parse(localStorage.getItem("attendance")) || {};
 
-    function getStudentById(id) {
-      return students.find(s => s.id === id) || {};
-    }
-
-    function populateReport() {
-      const tbody = document.querySelector("#reportTable tbody");
+    // ----------- Populate Attendance Table -------------
+    function populateAttendance() {
+      const tbody = document.querySelector("#attendanceTable tbody");
       tbody.innerHTML = '';
 
       const sortedDates = Object.keys(attendance).sort((a, b) => new Date(b) - new Date(a));
 
       sortedDates.forEach(date => {
         attendance[date].forEach(studentId => {
-          const student = getStudentById(studentId);
+          const student = students.find(s => s.id === studentId);
+          if (!student) return;
+
           const tr = document.createElement("tr");
           tr.innerHTML = `
             <td>${date}</td>
-            <td>${student.name || "Unknown"}</td>
-            <td>${student.day || "-"}</td>
+            <td>${student.name || '-'}</td>
+            <td>${student.day || '-'}</td>
           `;
           tbody.appendChild(tr);
         });
       });
     }
 
-    populateReport();
+    // ----------- Populate Financial Table -------------
+    function populateFinance() {
+      const tbody = document.querySelector("#financialTable tbody");
+      tbody.innerHTML = '';
+
+      students.forEach(student => {
+        const tr = document.createElement("tr");
+        const total = parseFloat(student.totalFee || 0);
+        const paid = parseFloat(student.initialPayment || 0);
+        const pending = total - paid;
+
+        tr.innerHTML = `
+          <td>${student.name}</td>
+          <td>${total}</td>
+          <td>${paid}</td>
+          <td style="color: ${pending > 0 ? 'red' : 'green'}">${pending}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    populateAttendance();
+    populateFinance();
   </script>
 </body>
 </html>

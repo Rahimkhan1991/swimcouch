@@ -169,22 +169,26 @@
       });
     }
 
-    function submitAttendance() {
-      const date = document.getElementById("attendanceDate").value;
-      if (!date) {
-        alert("Please select a date.");
-        return;
-      }
+    document.getElementById('submitAttendanceBtn').addEventListener('click', function () {
+  const selectedDate = document.getElementById('attendanceDate').value;
+  if (!selectedDate) {
+    alert('Please select a date.');
+    return;
+  }
 
-      const presentIds = Array.from(document.querySelectorAll(".mark-present"))
-        .filter(cb => cb.checked)
-        .map(cb => cb.dataset.id);
+  const attendanceData = JSON.parse(localStorage.getItem('attendanceData') || '{}');
 
-      const attendance = JSON.parse(localStorage.getItem("attendance")) || {};
-      attendance[date] = presentIds;
-      localStorage.setItem("attendance", JSON.stringify(attendance));
-      alert("Attendance saved for " + date);
-    }
+  const attendanceForDate = {};
+  document.querySelectorAll('.student-checkbox').forEach(cb => {
+    attendanceForDate[cb.dataset.id] = cb.checked;
+  });
+
+  attendanceData[selectedDate] = attendanceForDate;
+
+  localStorage.setItem('attendanceData', JSON.stringify(attendanceData));
+  alert('Attendance saved!');
+});
+
 
     window.onload = () => {
       const today = new Date().toISOString().split("T")[0];

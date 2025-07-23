@@ -120,6 +120,26 @@ function confirmDataReset() {
   }
 }
 </script>
+<h2 style="margin-top: 30px; color: #007bff;">Dashboard Summary</h2>
+<div id="dashboard-summary" style="display: flex; flex-wrap: wrap; gap: 15px; margin-top: 10px;">
+  <div class="summary-card" id="total-students">👨‍🎓 Total Students: 0</div>
+  <div class="summary-card" id="total-collected">💰 Total Collected: 0</div>
+  <div class="summary-card" id="today-collected">📅 Today: 0</div>
+  <div class="summary-card" id="week-collected">📆 This Week: 0</div>
+  <div class="summary-card" id="pending-fee">📊 Pending Fee: 0</div>
+</div>
+
+<style>
+  .summary-card {
+    background: white;
+    border-radius: 10px;
+    padding: 15px;
+    box-shadow: 0 0 8px rgba(0,0,0,0.1);
+    width: 180px;
+    font-weight: bold;
+    font-size: 14px;
+  }
+</style>
 
 
 </body>

@@ -1,148 +1,143 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Reports</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
+  <title>Attendance Report</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     body {
       font-family: Arial, sans-serif;
+      background: #f0f4f8;
       margin: 0;
-      padding: 16px;
-      background-color: #f2f2f2;
+      padding: 20px;
     }
 
     h2 {
       color: #007bff;
-      margin-bottom: 12px;
+      margin-bottom: 15px;
     }
 
-    .summary-box {
-      background-color: #fff;
-      border-radius: 12px;
-      padding: 16px;
-      margin-bottom: 20px;
-      box-shadow: 0 0 8px rgba(0,0,0,0.05);
-    }
-
-    .summary-row {
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 10px;
-      font-weight: bold;
-    }
-
-    .section-title {
-      margin-top: 30px;
-      color: #333;
-      border-bottom: 2px solid #007bff;
-      padding-bottom: 5px;
-    }
-
-    .card {
+    .section {
+      margin-bottom: 30px;
       background: #fff;
-      margin-top: 10px;
-      padding: 12px;
+      padding: 15px;
       border-radius: 10px;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    label, select {
+      font-size: 16px;
+    }
+
+    select {
+      padding: 8px;
+      margin-top: 8px;
+      width: 100%;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+    }
+
+    th, td {
+      padding: 10px;
+      text-align: left;
+      border-bottom: 1px solid #eee;
+    }
+
+    th {
+      background: #007bff;
+      color: white;
     }
 
     @media (max-width: 600px) {
-      .summary-row {
-        flex-direction: column;
-        gap: 4px;
+      th, td {
+        font-size: 14px;
       }
     }
   </style>
 </head>
 <body>
 
-  <h2>Financial Summary</h2>
-  <div class="summary-box" id="financialSummary">
-    <div class="summary-row">
-      <span>Today's Profit:</span>
-      <span id="todayProfit">₹0</span>
-    </div>
-    <div class="summary-row">
-      <span>Weekly Profit:</span>
-      <span id="weekProfit">₹0</span>
-    </div>
-    <div class="summary-row">
-      <span>Monthly Profit:</span>
-      <span id="monthProfit">₹0</span>
-    </div>
-    <div class="summary-row">
-      <span>Total Profit:</span>
-      <span id="totalProfit">₹0</span>
-    </div>
+  <h2>Attendance Reports</h2>
+
+  <div class="section">
+    <label for="dateSelect">View by Date:</label>
+    <select id="dateSelect" onchange="filterByDate()">
+      <option value="">Select a date</option>
+    </select>
+    <div id="dateReport"></div>
   </div>
 
-  <h2 class="section-title">Attendance Report</h2>
-  <div id="attendanceReport"></div>
+  <div class="section">
+    <label for="studentSelect">View by Student:</label>
+    <select id="studentSelect" onchange="filterByStudent()">
+      <option value="">Select a student</option>
+    </select>
+    <div id="studentReport"></div>
+  </div>
 
   <script>
-    function loadFinancialSummary() {
-      const students = JSON.parse(localStorage.getItem("students") || "[]");
-      const payments = JSON.parse(localStorage.getItem("payments") || "[]");
+    const attendanceData = JSON.parse(localStorage.getItem("attendance") || "[]");
+    const students = JSON.parse(localStorage.getItem("students") || "[]");
 
-      const today = new Date();
-      const oneDay = 86400000;
-      let todayTotal = 0, weekTotal = 0, monthTotal = 0, total = 0;
+    const dateSelect = document.getElementById("dateSelect");
+    const studentSelect = document.getElementById("studentSelect");
 
-      // Helper to check date within X days
-      function isWithinDays(dateStr, days) {
-        const date = new Date(dateStr);
-        return (today - date) <= (days * oneDay);
-      }
+    function loadDropdowns() {
+      const dates = [...new Set(attendanceData.map(a => a.date))];
+      dates.forEach(date => {
+        const opt = document.createElement("option");
+        opt.value = date;
+        opt.textContent = date;
+        dateSelect.appendChild(opt);
+      });
 
-      // Process initial payments from student records
       students.forEach(s => {
-        const paid = parseFloat(s.initialPayment || 0);
-        const joinedDate = s.joinedOn || s.date || "";
-        if (!joinedDate) return;
-
-        total += paid;
-        if (isWithinDays(joinedDate, 30)) monthTotal += paid;
-        if (isWithinDays(joinedDate, 7)) weekTotal += paid;
-        if (isWithinDays(joinedDate, 1)) todayTotal += paid;
+        const opt = document.createElement("option");
+        opt.value = s.name;
+        opt.textContent = s.name;
+        studentSelect.appendChild(opt);
       });
-
-      // Process fee payments
-      payments.forEach(p => {
-        const amt = parseFloat(p.amount || 0);
-        if (!p.date) return;
-
-        total += amt;
-        if (isWithinDays(p.date, 30)) monthTotal += amt;
-        if (isWithinDays(p.date, 7)) weekTotal += amt;
-        if (isWithinDays(p.date, 1)) todayTotal += amt;
-      });
-
-      // Show in UI
-      document.getElementById("todayProfit").textContent = `₹${todayTotal}`;
-      document.getElementById("weekProfit").textContent = `₹${weekTotal}`;
-      document.getElementById("monthProfit").textContent = `₹${monthTotal}`;
-      document.getElementById("totalProfit").textContent = `₹${total}`;
     }
 
-    function loadAttendanceReport() {
-      const attendance = JSON.parse(localStorage.getItem("attendance") || "{}");
-      const students = JSON.parse(localStorage.getItem("students") || "[]");
-      const container = document.getElementById("attendanceReport");
-      container.innerHTML = "";
+    function filterByDate() {
+      const selected = dateSelect.value;
+      const filtered = attendanceData.find(a => a.date === selected);
+      if (!filtered) return document.getElementById("dateReport").innerHTML = "<p>No data found.</p>";
 
-      for (let date in attendance) {
-        const list = attendance[date];
-        const div = document.createElement("div");
-        div.className = "card";
-        div.innerHTML = `<strong>${date}</strong><br>${list.join(", ")}`;
-        container.appendChild(div);
-      }
+      let html = `
+        <table>
+          <tr><th>Student Name</th><th>Status</th></tr>
+          ${Object.entries(filtered.attendance).map(([name, status]) =>
+            `<tr><td>${name}</td><td>${status}</td>`
+          ).join("")}
+        </table>
+      `;
+      document.getElementById("dateReport").innerHTML = html;
     }
 
-    loadFinancialSummary();
-    loadAttendanceReport();
+    function filterByStudent() {
+      const selected = studentSelect.value;
+      const rows = attendanceData
+        .filter(entry => entry.attendance[selected])
+        .map(entry => `<tr><td>${entry.date}</td><td>${entry.attendance[selected]}</td></tr>`);
+
+      if (!rows.length) return document.getElementById("studentReport").innerHTML = "<p>No records found.</p>";
+
+      document.getElementById("studentReport").innerHTML = `
+        <table>
+          <tr><th>Date</th><th>Status</th></tr>
+          ${rows.join("")}
+        </table>
+      `;
+    }
+
+    loadDropdowns();
   </script>
-
 </body>
 </html>

@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Add Student</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 400px;
+      margin: 20px auto;
+    }
+
+    label {
+      display: block;
+      margin-top: 15px;
+    }
+
+    input[type="text"],
+    input[type="number"],
+    select {
+      width: 100%;
+      padding: 8px;
+      margin-top: 5px;
+    }
+
+    .checkbox-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .checkbox-group label {
+      margin-top: 5px;
+    }
+
+    .preview {
+      margin-top: 10px;
+      display: none;
+      max-width: 100px;
+      border: 1px solid #ccc;
+    }
+
+    button {
+      margin-top: 20px;
+      padding: 10px;
+      width: 100%;
+      font-size: 16px;
+    }
+
+    #deleteBtn {
+      background: red;
+      color: white;
+    }
+  </style>
+</head>
+
+<body>
+  <h2>Add / Edit Student</h2>
+
+  <label>Select Existing Student</label>
+  <select id="existingStudents" onchange="loadStudentData(this.value)">
+    <option value="">-- New Student --</option>
+  </select>
+
+  <label>Student Name</label>
+  <input type="text" id="studentName" required>
+
+  <label>Phone Number</label>
+  <input type="text" id="phone">
+
+  <label>Total Fee</label>
+  <input type="number" id="totalFee">
+
+  <label>Initial Payment</label>
+  <input type="number" id="initialPayment">
+
+  <label>Days Assigned</label>
+  <div class="checkbox-group">
+    <label><input type="checkbox" value="Mon"> Mon</label>
+    <label><input type="checkbox" value="Tue"> Tue</label>
+    <label><input type="checkbox" value="Wed"> Wed</label>
+    <label><input type="checkbox" value="Thu"> Thu</label>
+    <label><input type="checkbox" value="Fri"> Fri</label>
+    <label><input type="checkbox" value="Sat"> Sat</label>
+    <label><input type="checkbox" value="Sun"> Sun</label>
+  </div>
+
+  <label>Photo</label>
+  <input type="file" id="photoInput" accept="image/*">
+  <img id="previewImg" class="preview">
+
+  <button onclick="saveStudent()">Save Student</button>
+  <button id="deleteBtn" onclick="deleteStudentPrompt()">Delete Student</button>
+
+  <script>
+    const studentName = document.getElementById("studentName");
+    const phone = document.getElementById("phone");
+    const totalFee = document.getElementById("totalFee");
+    const initialPayment = document.getElementById("initialPayment");
+    const previewImg = document.getElementById("previewImg");
+    const photoInput = document.getElementById("photoInput");
+    const dropdown = document.getElementById("existingStudents");
+    const students = JSON.parse(localStorage.getItem("students") || "[]");
+
+    let editingIndex = null;
+
+    // Populate dropdown
+    students.forEach((s, i) => {
+      const opt = document.createElement("option");
+      opt.value = i;
+      opt.textContent = s.name;
+      dropdown.appendChild(opt);
+    });
+
+    function loadStudentData(index) {
+      if (index === "") {
+        editingIndex = null;
+        studentName.value = "";
+        phone.value = "";
+        totalFee.value = "";
+        initialPayment.value = "";
+        previewImg.src = "";
+        previewImg.style.display = "none";
+        document.querySelectorAll("input[type=checkbox]").forEach(cb => cb.checked = false);
+        return;
+      }
+
+      const student = students[index];
+      editingIndex = parseInt(index);
+
+      studentName.value = student.name || "";
+      phone.value = student.phone || "";
+      totalFee.value = student.totalFee || "";
+      initialPayment.value = student.paidAmount || "";
+
+      document.querySelectorAll("input[type=checkbox]").forEach(cb => cb.checked = false);
+      if (student.days && Array.isArray(student.days)) {
+        student.days.forEach(day => {
+          const cb = document.querySelector(`input[type="checkbox"][value="${day}"]`);
+          if (cb) cb.checked = true;
+        });
+      }
+
+      if (student.photo) {
+        previewImg.src = student.photo;
+        previewImg.style.display = "block";
+      }
+    }
+
+    photoInput.addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        previewImg.src = URL.createObjectURL(file);
+        previewImg.style.display = "block";
+      }
+    });
+
+    function saveStudent() {
+      const name = studentName.value.trim();
+      const phoneNum = phone.value.trim();
+      const fee = parseFloat(totalFee.value) || 0;
+      const paid = parseFloat(initialPayment.value) || 0;
+      const days = Array.from(document.querySelectorAll('input[type="checkbox"]:checked')).map(cb => cb.value);
+      const file = photoInput.files[0];
+
+      if (!name || !phoneNum || !fee) {
+        return alert("Please fill all required fields.");
+      }
+
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const photoBase64 = file ? reader.result : (previewImg.src || "");
+
+        const newStudent = {
+          name,
+          phone: phoneNum,
+          totalFee: fee,
+          paidAmount: paid,
+          days,
+          photo: photoBase64
+        };
+
+        if (editingIndex !== null) {
+          students[editingIndex] = newStudent;
+          alert("Student updated!");
+        } else {
+          students.push(newStudent);
+          alert("Student added!");
+        }
+
+        localStorage.setItem("students", JSON.stringify(students));
+        location.href = "view-students.html";
+      };
+
+      if (file) {
+        reader.readAsDataURL(file);
+      } else {
+        reader.onloadend(); // still trigger for existing photo
+      }
+    }
+
+    function deleteStudentPrompt() {
+      if (editingIndex === null) return alert("Choose a student first.");
+      if (confirm("Delete this student?")) {
+        students.splice(editingIndex, 1);
+        localStorage.setItem("students", JSON.stringify(students));
+        alert("Student deleted.");
+        location.href = "view-students.html";
+      }
+    }
+  </script>
+</body>
+
+</html>

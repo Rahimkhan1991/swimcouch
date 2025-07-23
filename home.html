@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Dashboard - Swim Class</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: "Segoe UI", sans-serif;
+      background-color: #f4f9ff;
+    }
+
+    header {
+      background-color: #3498db;
+      color: white;
+      padding: 16px;
+      text-align: center;
+      font-size: 22px;
+    }
+
+    .container {
+      padding: 20px;
+    }
+
+    .greeting {
+      font-size: 18px;
+      margin-bottom: 20px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 20px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      text-align: center;
+      cursor: pointer;
+      transition: 0.3s ease;
+    }
+
+    .card:hover {
+      background-color: #ecf7ff;
+      transform: translateY(-4px);
+    }
+
+    .card h3 {
+      margin: 10px 0 0;
+      font-size: 18px;
+      color: #2c3e50;
+    }
+
+    .logout-btn {
+      margin-top: 30px;
+      text-align: center;
+    }
+
+    .logout-btn button {
+      background-color: #e74c3c;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 10px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    .logout-btn button:hover {
+      background-color: #c0392b;
+    }
+  </style>
+</head>
+<body>
+
+  <header>🏊‍♂️ Swim Class Manager</header>
+
+  <div class="container">
+    <div class="greeting" id="greeting">Welcome!</div>
+
+    <div class="grid">
+      <div class="card" onclick="showStudentOptions()">
+        <h3>👨‍🎓 Student Management</h3>
+        <p style="font-size: 12px; color: #666;">Add new or edit existing students</p>
+      </div>
+
+      <div class="card" onclick="location.href='attendance.html'">
+        <h3>✅ Attendance</h3>
+      </div>
+
+      <div class="card" onclick="location.href='fee.html'">
+        <h3>💰 Fee</h3>
+      </div>
+
+      <div class="card" onclick="location.href='report.html'">
+        <h3>📊 Reports</h3>
+      </div>
+
+      <div class="card" onclick="location.href='sms.html'">
+        <h3>📩 SMS</h3>
+      </div>
+    </div>
+
+    <div class="logout-btn">
+      <button onclick="logout()">Logout</button>
+    </div>
+  </div>
+
+  <script>
+    // Redirect to login if not logged in
+    if (localStorage.getItem("isLoggedIn") !== "true") {
+      window.location.href = "index.html";
+    }
+
+    // Greet user by name
+    let user = {};
+    try {
+      const userData = localStorage.getItem("user");
+      if (userData) {
+        // Handle case where userData is just "admin" string (not JSON)
+        if (userData === "admin") {
+          user = { username: "admin" };
+        } else if (userData === '"admin"') {
+          user = { username: "admin" };
+        } else {
+          // Try to parse as JSON
+          user = JSON.parse(userData);
+        }
+      }
+    } catch (e) {
+      console.error("Error parsing user data:", e);
+      user = { username: "admin" };
+    }
+    document.getElementById("greeting").textContent = `Welcome, ${user.username || "Guest"}!`;
+
+    function logout() {
+      localStorage.removeItem("isLoggedIn");
+      localStorage.removeItem("user");
+      window.location.href = "index.html";
+    }
+
+    function showStudentOptions() {
+      // Create a modal-like interface
+      const modal = document.createElement('div');
+      modal.style.cssText = `
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0,0,0,0.5); z-index: 1000;
+        display: flex; justify-content: center; align-items: center;
+      `;
+      
+      const modalContent = document.createElement('div');
+      modalContent.style.cssText = `
+        background: white; padding: 20px; border-radius: 15px;
+        max-width: 90%; width: 400px; text-align: center;
+      `;
+      
+      modalContent.innerHTML = `
+        <h3 style="margin-top: 0;">Student Management</h3>
+        <p style="color: #666;">Choose an option:</p>
+        <button onclick="addNewStudent()" style="
+          background: #28a745; color: white; border: none;
+          padding: 12px 20px; margin: 10px; border-radius: 8px;
+          cursor: pointer; font-size: 16px; width: 45%;
+        ">➕ Add New</button>
+        <button onclick="editExistingStudent()" style="
+          background: #007bff; color: white; border: none;
+          padding: 12px 20px; margin: 10px; border-radius: 8px;
+          cursor: pointer; font-size: 16px; width: 45%;
+        ">✏️ Edit Existing</button>
+        <br>
+        <button onclick="closeModal()" style="
+          background: #6c757d; color: white; border: none;
+          padding: 8px 15px; margin-top: 10px; border-radius: 6px;
+          cursor: pointer;
+        ">Cancel</button>
+      `;
+      
+      modal.appendChild(modalContent);
+      document.body.appendChild(modal);
+      
+      // Add functions to window for button clicks
+      window.addNewStudent = function() {
+        closeModal();
+        window.location.href = 'add-student.html';
+      };
+      
+      window.editExistingStudent = function() {
+        closeModal();
+        showEditStudentModal();
+      };
+      
+      window.closeModal = function() {
+        document.body.removeChild(modal);
+        delete window.addNewStudent;
+        delete window.editExistingStudent;
+        delete window.closeModal;
+      };
+      
+      // Close on background click
+      modal.onclick = function(e) {
+        if (e.target === modal) closeModal();
+      };
+    }
+
+    function showEditStudentModal() {
+      const students = JSON.parse(localStorage.getItem("students") || "[]");
+      if (students.length === 0) {
+        alert("No students found. Please add students first.");
+        return;
+      }
+
+      // Create student selection modal
+      const modal = document.createElement('div');
+      modal.style.cssText = `
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0,0,0,0.5); z-index: 1000;
+        display: flex; justify-content: center; align-items: center;
+      `;
+      
+      const modalContent = document.createElement('div');
+      modalContent.style.cssText = `
+        background: white; padding: 20px; border-radius: 15px;
+        max-width: 90%; width: 500px; max-height: 80vh; overflow-y: auto;
+      `;
+      
+      let studentList = '<h3 style="margin-top: 0; text-align: center;">Select Student to Edit</h3>';
+      students.forEach((student, index) => {
+        studentList += `
+          <div onclick="selectStudent(${index})" style="
+            border: 1px solid #ddd; margin: 8px 0; padding: 12px;
+            border-radius: 8px; cursor: pointer; background: #f8f9fa;
+          " onmouseover="this.style.background='#e9ecef'" 
+             onmouseout="this.style.background='#f8f9fa'">
+            <strong>${student.name}</strong><br>
+            <small>Phone: ${student.phone} | Balance: ₹${student.balance}</small>
+          </div>
+        `;
+      });
+      
+      studentList += `
+        <div style="text-align: center; margin-top: 15px;">
+          <button onclick="closeEditModal()" style="
+            background: #6c757d; color: white; border: none;
+            padding: 8px 15px; border-radius: 6px; cursor: pointer;
+          ">Cancel</button>
+        </div>
+      `;
+      
+      modalContent.innerHTML = studentList;
+      modal.appendChild(modalContent);
+      document.body.appendChild(modal);
+      
+      window.selectStudent = function(index) {
+        const selectedStudent = students[index];
+        localStorage.setItem("editingStudent", JSON.stringify(selectedStudent));
+        closeEditModal();
+        window.location.href = 'add-student.html?edit=true';
+      };
+      
+      window.closeEditModal = function() {
+        document.body.removeChild(modal);
+        delete window.selectStudent;
+        delete window.closeEditModal;
+      };
+      
+      // Close on background click
+      modal.onclick = function(e) {
+        if (e.target === modal) closeEditModal();
+      };
+    }
+  </script>
+
+</body>
+</html>

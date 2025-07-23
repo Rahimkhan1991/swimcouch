@@ -151,16 +151,17 @@
         card.onclick = () => showPopup(index);
 
         const photo = document.createElement("img");
-        photo.src = student.photo || "";
+        photo.src = student.image || ""; // ✅ fixed from student.photo
         photo.className = "student-photo";
 
         const details = document.createElement("div");
         details.className = "student-details";
+        const pending = (student.totalFee || 0) - (student.initialPayment || 0);
         details.innerHTML = `
           <strong>${student.name}</strong>
           <span>Phone: ${student.phone || "-"}</span>
-          <span>Total Fee: ₹${student.totalFee || "0"}</span>
-          <span>Pending: ₹${(student.totalFee - student.initialPayment) || "0"}</span>
+          <span>Total Fee: ₹${student.totalFee || 0}</span>
+          <span>Pending: ₹${pending >= 0 ? pending : 0}</span>
         `;
 
         const info = document.createElement("div");
@@ -182,7 +183,7 @@
       document.getElementById("editDay").value = student.day || "";
       document.getElementById("editFee").value = student.totalFee || "";
       document.getElementById("editInitial").value = student.initialPayment || "";
-      document.getElementById("editPhoto").src = student.photo || "";
+      document.getElementById("editPhoto").src = student.image || ""; // ✅ fixed here too
 
       document.getElementById("studentPopup").style.display = "block";
     }

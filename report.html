@@ -129,23 +129,24 @@
     }
 
     // Load student list
-    function loadStudents() {
-      try {
-        const students = JSON.parse(localStorage.getItem("students") || "[]");
-        const dropdown = document.getElementById("studentDropdown");
-        dropdown.innerHTML = '<option value="">--Select Student--</option>'; // Reset dropdown
+   function loadStudents() {
+  try {
+    const students = JSON.parse(localStorage.getItem("students") || []);
+    const dropdown = document.getElementById("studentDropdown");
+    dropdown.innerHTML = '<option value="">--Select Student--</option>';
 
-        students.forEach(student => {
-          const opt = document.createElement("option");
-          opt.value = student.name;
-          opt.textContent = `${student.name} (Rp${student.balance || 0} balance)`;
-          dropdown.appendChild(opt);
-        });
-      } catch (e) {
-        console.error("Error loading students:", e);
-        alert("Failed to load student data. Check console for details.");
-      }
-    }
+    // Sort students by name
+    students.sort((a, b) => a.name.localeCompare(b.name)).forEach(student => {
+      const opt = document.createElement("option");
+      opt.value = student.name;
+      opt.textContent = `${student.name} (Rp${student.balance || 0} balance)`;
+      dropdown.appendChild(opt);
+    });
+  } catch (e) {
+    console.error("Error loading students:", e);
+    alert("Failed to load student data. Check console for details.");
+  }
+}
 
     function showAttendanceHistory() {
       const selectedStudentName = document.getElementById("studentDropdown").value;
@@ -239,12 +240,14 @@
     };
   </script>
   <script>
- function showAttendanceHistory() {
-  const selectedStudentName = document.getElementById("studentDropdown").value;
-  if (!selectedStudentName) {
-    document.getElementById("attendanceResult").innerHTML = "";
-    return;
+ window.onload = () => {
+  // Set default date if not set
+  if (!document.getElementById('attendanceDate').value) {
+    document.getElementById('attendanceDate').valueAsDate = new Date();
   }
+  loadStudents();
+  loadFinanceSummary();
+};
 
   // Get ALL attendance records
   const allAttendance = JSON.parse(localStorage.getItem("attendance")) || [];

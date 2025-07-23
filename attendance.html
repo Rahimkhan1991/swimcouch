@@ -1,126 +1,163 @@
-<body style="background-color: #f2f4f8; font-family: 'Segoe UI', sans-serif; margin: 0; padding: 20px;">
-  <h2 style="text-align: center; color: #007bff;">Student Attendance</h2>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Attendance</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 10px;
+      background: #f5f6fa;
+    }
 
-  <div style="display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; margin-bottom: 20px;">
-    <select id="dayFilter" onchange="loadStudentsByDay()" style="padding: 10px; font-size: 16px;">
-      <option value="All">All Days</option>
-      <option value="Monday">Monday</option>
-      <option value="Tuesday">Tuesday</option>
-      <option value="Wednesday">Wednesday</option>
-      <option value="Thursday">Thursday</option>
-      <option value="Friday">Friday</option>
-      <option value="Saturday">Saturday</option>
-      <option value="Sunday">Sunday</option>
-    </select>
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #007bff;
+      color: white;
+      padding: 10px 15px;
+      border-radius: 5px;
+      margin-bottom: 15px;
+    }
 
-    <input type="date" id="attendanceDate" style="padding: 10px; font-size: 16px;"/>
+    header h2 {
+      margin: 0;
+      font-size: 18px;
+    }
 
-    <label style="display: flex; align-items: center; gap: 5px; background: #28a745; color: white; padding: 10px; border-radius: 5px; cursor: pointer;">
-      <input type="checkbox" id="markAll" onclick="toggleMarkAll()" style="transform: scale(1.2);" />
-      Mark All Present
-    </label>
+    .back-btn {
+      background: white;
+      color: #007bff;
+      border: none;
+      padding: 5px 10px;
+      border-radius: 5px;
+      font-size: 14px;
+      cursor: pointer;
+    }
 
-    <button onclick="saveAttendance()" style="background-color: #007bff; color: white; padding: 10px 15px; border: none; border-radius: 5px; cursor: pointer;">
-      💾 Save Attendance
-    </button>
+    select, button {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      font-size: 16px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+
+    .student-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .student-card {
+      background: white;
+      padding: 10px;
+      border-radius: 8px;
+      box-shadow: 0 0 3px rgba(0, 0, 0, 0.1);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+    }
+
+    .student-name {
+      font-weight: bold;
+      font-size: 16px;
+      flex: 1;
+    }
+
+    .checkbox {
+      transform: scale(1.3);
+    }
+
+    @media (max-width: 600px) {
+      .student-card {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .student-name, .checkbox {
+        width: 100%;
+        margin-top: 5px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h2>Attendance</h2>
+    <button class="back-btn" onclick="goBack()">Back</button>
+  </header>
+
+  <label for="dayFilter">Select Day:</label>
+  <select id="dayFilter" onchange="filterStudentsByDay()">
+    <option value="All">All Days</option>
+    <option value="Monday">Monday</option>
+    <option value="Tuesday">Tuesday</option>
+    <option value="Wednesday">Wednesday</option>
+    <option value="Thursday">Thursday</option>
+    <option value="Friday">Friday</option>
+    <option value="Saturday">Saturday</option>
+    <option value="Sunday">Sunday</option>
+  </select>
+
+  <div class="student-list" id="studentList">
+    <!-- Students will be populated here -->
   </div>
 
-  <div id="studentList" style="max-width: 600px; margin: auto;"></div>
+  <button onclick="saveAttendance()">Save Attendance</button>
 
   <script>
-    let students = [];
+    const students = JSON.parse(localStorage.getItem("students")) || [];
+    const today = new Date().toLocaleDateString();
 
-    function setDefaultDate() {
-      const today = new Date().toISOString().split("T")[0];
-      document.getElementById("attendanceDate").value = today;
+    function goBack() {
+      window.history.back();
     }
 
-    function loadStudents() {
-      students = JSON.parse(localStorage.getItem("students") || "[]");
-      loadStudentsByDay();
+    function filterStudentsByDay() {
+      const selectedDay = document.getElementById("dayFilter").value;
+      const filtered = selectedDay === "All" ? students : students.filter(s => s.day === selectedDay);
+      displayStudents(filtered);
     }
 
-    function loadStudentsByDay() {
-      const day = document.getElementById("dayFilter").value;
-      const list = document.getElementById("studentList");
-      list.innerHTML = "";
-
-      let filtered;
-      if (day === "All") {
-        filtered = students;
-      } else {
-        filtered = students.filter(s => {
-          if (Array.isArray(s.days)) {
-            return s.days.includes(day);
-          }
-          return s.day === day;
-        });
-      }
-
-      if (filtered.length === 0) {
-        list.innerHTML = "<p style='text-align:center;'>No students found for selected day.</p>";
-        return;
-      }
-
-      filtered.forEach(student => {
+    function displayStudents(list) {
+      const container = document.getElementById("studentList");
+      container.innerHTML = "";
+      list.forEach((student, index) => {
         const div = document.createElement("div");
-        div.style = "background: #fff; margin-bottom: 10px; padding: 10px 15px; display: flex; align-items: center; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.05);";
-
-        const image = student.image 
-          ? `<img src="${student.image}" alt="${student.name}" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; margin-right: 15px;">`
-          : `<div style="width: 40px; height: 40px; border-radius: 50%; background: #ccc; margin-right: 15px; display: flex; align-items: center; justify-content: center;">👤</div>`;
-
+        div.className = "student-card";
         div.innerHTML = `
-          ${image}
-          <label style="flex:1;">${student.name} (${student.day || "N/A"})</label>
-          <input type="checkbox" id="student-${student.id}" style="transform: scale(1.3);" />
+          <span class="student-name">${student.name}</span>
+          <input class="checkbox" type="checkbox" id="attend_${index}">
         `;
-
-        list.appendChild(div);
-      });
-    }
-
-    function toggleMarkAll() {
-      const check = document.getElementById("markAll").checked;
-      students.forEach(student => {
-        const cb = document.getElementById(`student-${student.id}`);
-        if (cb) cb.checked = check;
+        container.appendChild(div);
       });
     }
 
     function saveAttendance() {
-      const date = document.getElementById("attendanceDate").value;
-      if (!date) {
-        alert("Please select a date.");
-        return;
-      }
+      const checkboxes = document.querySelectorAll(".checkbox");
+      const attendance = JSON.parse(localStorage.getItem("attendance")) || {};
+      const selectedDay = document.getElementById("dayFilter").value;
+      const filtered = selectedDay === "All" ? students : students.filter(s => s.day === selectedDay);
 
-      const attendance = JSON.parse(localStorage.getItem("attendance") || "[]");
-      const day = document.getElementById("dayFilter").value;
-
-      let filtered = (day === "All") ? students : students.filter(s => {
-        if (Array.isArray(s.days)) {
-          return s.days.includes(day);
-        }
-        return s.day === day;
-      });
-
-      filtered.forEach(student => {
-        const checkbox = document.getElementById(`student-${student.id}`);
-        if (!checkbox) return;
-        attendance.push({
-          studentId: student.id,
-          name: student.name,
-          date: date,
-          status: checkbox.checked ? "Present" : "Absent"
-        });
+      filtered.forEach((student, i) => {
+        const key = `${student.name}_${today}`;
+        attendance[key] = checkboxes[i].checked;
       });
 
       localStorage.setItem("attendance", JSON.stringify(attendance));
-      alert("✅ Attendance saved!");
+      alert("Attendance saved!");
     }
 
-    setDefaultDate();
-    loadStudents();
+    // Init
+    filterStudentsByDay();
   </script>
+
 </body>
+</html>

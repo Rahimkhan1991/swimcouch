@@ -57,21 +57,23 @@
       }
     }
 
-    .summary-card {
-      background: white;
-      border-radius: 10px;
-      padding: 15px;
-      box-shadow: 0 0 8px rgba(0,0,0,0.1);
-      width: 180px;
-      font-weight: bold;
-      font-size: 14px;
-    }
-
-    #dashboard-summary {
+    .summary {
       display: flex;
       flex-wrap: wrap;
       gap: 15px;
+      margin-top: 20px;
+    }
+
+    .summary .card h3 {
+      margin: 0;
+      font-size: 16px;
+    }
+
+    .summary .card p {
+      font-size: 20px;
       margin-top: 10px;
+      color: #007bff;
+      font-weight: bold;
     }
   </style>
 </head>
@@ -80,60 +82,49 @@
 
   <div class="grid">
     <a class="card" href="add-student.html">
-      <span>👨‍🎓</span>
-      Student Management
+      <span>👨‍🎓</span> Student Management
     </a>
     <a class="card" href="view-students.html">
-      <span>📋</span>
-      View Students
+      <span>📋</span> View Students
     </a>
     <a class="card" href="attendance.html">
-      <span>✅</span>
-      Attendance
+      <span>✅</span> Attendance
     </a>
     <a class="card" href="fee.html">
-      <span>💰</span>
-      Fee Collection
+      <span>💰</span> Fee Collection
     </a>
     <a class="card" href="attendance_report.html">
-      <span>🗒️</span>
-      Attendance Report
+      <span>🗒️</span> Attendance Report
     </a>
     <a class="card" href="finance_report.html">
-      <span>💹</span>
-      Finance Summary
+      <span>💹</span> Finance Summary
     </a>
     <a class="card" href="sms.html">
-      <span>📩</span>
-      SMS Alerts
+      <span>📩</span> SMS Alerts
     </a>
     <a class="card" href="#" onclick="confirmDataReset()">
-      <span>🧹</span>
-      Reset App (Secure)
+      <span>🧹</span> Reset App (Secure)
     </a>
     <a class="card" href="index.html">
-      <span>🚪</span>
-      Logout
+      <span>🚪</span> Logout
     </a>
   </div>
 
   <h2 style="margin-top: 30px; color: #007bff;">Dashboard Summary</h2>
-  <div id="dashboard-summary">
-    <<div class="dashboard">
-  <div class="card">
-    <h3>Total Students</h3>
-    <p id="totalStudentsCard">0</p>
+  <div class="summary">
+    <div class="card">
+      <h3>Total Students</h3>
+      <p id="totalStudentsCard">0</p>
+    </div>
+    <div class="card">
+      <h3>Total Collected</h3>
+      <p id="totalCollectedCard">₹0</p>
+    </div>
+    <div class="card">
+      <h3>Pending Fee</h3>
+      <p id="totalPendingCard">₹0</p>
+    </div>
   </div>
-  <div class="card">
-    <h3>Total Collected</h3>
-    <p id="totalCollectedCard">₹0</p>
-  </div>
-  <div class="card">
-    <h3>Pending Fee</h3>
-    <p id="totalPendingCard">₹0</p>
-  </div>
-</div>
-
 
   <script>
     function updateDashboardSummary() {
@@ -149,7 +140,7 @@
         const totalFee = parseFloat(student.totalFee) || 0;
 
         const feeSum = fees
-          .filter(f => f.name === student.name && f.phone === student.phone)
+          .filter(f => f.studentId === student.id)
           .reduce((sum, f) => sum + (parseFloat(f.amount) || 0), 0);
 
         const paid = initial + feeSum;
@@ -159,9 +150,9 @@
         pendingFee += pending;
       });
 
-      document.getElementById('total-students').textContent = `👨‍🎓 Total Students: ${totalStudents}`;
-      document.getElementById('total-collected').textContent = `💰 Total Collected: ₹${totalCollected}`;
-      document.getElementById('pending-fee').textContent = `📊 Pending Fee: ₹${pendingFee}`;
+      document.getElementById('totalStudentsCard').textContent = totalStudents;
+      document.getElementById('totalCollectedCard').textContent = `₹${totalCollected}`;
+      document.getElementById('totalPendingCard').textContent = `₹${pendingFee}`;
     }
 
     function confirmDataReset() {

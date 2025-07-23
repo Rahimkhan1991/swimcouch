@@ -1,135 +1,174 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>View Students</title>
   <style>
     body {
       font-family: Arial, sans-serif;
-      padding: 10px;
-      background: #f2f2f2;
+      background: #f0f2f5;
+      padding: 20px;
     }
-
     h2 {
-      text-align: center;
       color: #007bff;
     }
-
-    #studentList {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-
-    .student-card {
+    .card {
       background: white;
-      padding: 12px;
+      padding: 15px;
+      margin-bottom: 15px;
       border-radius: 10px;
       box-shadow: 0 2px 6px rgba(0,0,0,0.1);
       display: flex;
+      align-items: center;
       justify-content: space-between;
-      align-items: center;
+      flex-wrap: wrap;
     }
-
-    .student-info {
+    .info {
+      flex: 1;
+      min-width: 200px;
+    }
+    .actions {
       display: flex;
-      align-items: center;
       gap: 10px;
     }
-
-    .student-photo {
+    .student-img {
       width: 60px;
       height: 60px;
-      object-fit: cover;
       border-radius: 50%;
-      border: 1px solid #ccc;
+      object-fit: cover;
+      margin-right: 15px;
+      border: 2px solid #007bff;
     }
-
-    .student-details span {
-      display: block;
-      font-size: 14px;
+    .field {
+      margin: 4px 0;
     }
-
-    .edit-btn {
-      background-color: #007bff;
-      color: white;
-      border: none;
-      padding: 8px 12px;
-      border-radius: 6px;
-      cursor: pointer;
+    .pending {
+      color: red;
+      font-weight: bold;
     }
-
-    .edit-btn:hover {
-      background-color: #0056b3;
+    .popup {
+      position: fixed;
+      top: 10%;
+      left: 50%;
+      transform: translateX(-50%);
+      background: white;
+      padding: 20px;
+      border: 2px solid #007bff;
+      border-radius: 10px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+      z-index: 100;
+      width: 90%;
+      max-width: 400px;
     }
-
-    #backBtn {
-      display: inline-block;
-      margin-bottom: 15px;
-      padding: 8px 14px;
-      background-color: #28a745;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      text-decoration: none;
+    .popup input {
+      width: 100%;
+      margin-bottom: 10px;
+      padding: 8px;
     }
-
-    #backBtn:hover {
-      background-color: #218838;
+    .popup-buttons {
+      display: flex;
+      justify-content: space-between;
     }
   </style>
 </head>
 <body>
-  <a id="backBtn" href="home.html">← Home</a>
   <h2>All Students</h2>
-  <div id="studentList"></div>
+  <div id="studentsList"></div>
+
+  <div id="editPopup" class="popup" style="display: none;">
+    <h3>Edit Student</h3>
+    <input type="text" id="editName" placeholder="Name" />
+    <input type="text" id="editPhone" placeholder="Phone" />
+    <input type="text" id="editDay" placeholder="Assigned Day" />
+    <input type="number" id="editTotalFee" placeholder="Total Fee" />
+    <input type="number" id="editInitialPayment" placeholder="Initial Payment" />
+    <div class="popup-buttons">
+      <button onclick="saveEdit()">Save</button>
+      <button onclick="closeEdit()">Cancel</button>
+    </div>
+  </div>
 
   <script>
-    function loadStudents() {
-      const list = document.getElementById("studentList");
+    let students = JSON.parse(localStorage.getItem('students')) || [];
+    let payments = JSON.parse(localStorage.getItem('payments')) || [];
+    let selectedIndex = null;
+
+    function calculateCollectedFee(name) {
+      return payments
+        .filter(p => p.name === name)
+        .reduce((total, p) => total + Number(p.amount || 0), 0);
+    }
+
+    function displayStudents() {
+      const list = document.getElementById('studentsList');
       list.innerHTML = "";
 
-      const students = JSON.parse(localStorage.getItem('students') || '[]');
-      const feeRecords = JSON.parse(localStorage.getItem('feeRecords') || '[]');
-
       students.forEach((student, index) => {
-        const totalFee = parseFloat(student.totalFee || 0);
-        const initialPayment = parseFloat(student.initialPayment || 0);
-
-        const additionalPayments = feeRecords
-          .filter(fee => fee.name.trim().toLowerCase() === student.name.trim().toLowerCase())
-          .reduce((sum, fee) => sum + parseFloat(fee.amount || 0), 0);
-
-        const totalPaid = initialPayment + additionalPayments;
-        const pendingFee = totalFee - totalPaid;
+        const collectedFee = calculateCollectedFee(student.name);
+        const totalPaid = Number(student.initialPayment || 0) + collectedFee;
+        const pending = Math.max(Number(student.totalFee || 0) - totalPaid, 0);
 
         const card = document.createElement("div");
-        card.className = "student-card";
+        card.className = "card";
+
+        const img = student.photo ? `<img class="student-img" src="${student.photo}" alt="pic"/>` : "";
+
         card.innerHTML = `
-          <div class="student-info">
-            <img src="${student.photo || ''}" class="student-photo" alt="Photo">
-            <div class="student-details">
-              <strong>${student.name}</strong>
-              <span>Phone: ${student.phone}</span>
-              <span>Day: ${student.day}</span>
-              <span>Total Fee: ₹${totalFee}</span>
-              <span style="color:green;">Paid: ₹${totalPaid}</span>
-              <span style="color:${pendingFee > 0 ? 'red' : 'green'};">Pending: ₹${pendingFee}</span>
-            </div>
+          ${img}
+          <div class="info">
+            <div class="field"><strong>${student.name}</strong></div>
+            <div class="field">Phone: ${student.phone}</div>
+            <div class="field">Day: ${student.day}</div>
+            <div class="field">Total Fee: ₹${student.totalFee}</div>
+            <div class="field">Paid: ₹${totalPaid}</div>
+            <div class="field pending">Pending: ₹${pending}</div>
           </div>
-          <div>
-            <button class="edit-btn" onclick="showPopup(${index})">Edit</button>
+          <div class="actions">
+            <button onclick="editStudent(${index})">Edit</button>
+            <button onclick="deleteStudent(${index})">Delete</button>
           </div>
         `;
         list.appendChild(card);
       });
     }
 
-    function showPopup(index) {
-      alert("Edit popup for student #" + index + " (You can integrate your editor here)");
+    function editStudent(index) {
+      selectedIndex = index;
+      const student = students[index];
+      document.getElementById("editName").value = student.name;
+      document.getElementById("editPhone").value = student.phone;
+      document.getElementById("editDay").value = student.day;
+      document.getElementById("editTotalFee").value = student.totalFee;
+      document.getElementById("editInitialPayment").value = student.initialPayment;
+      document.getElementById("editPopup").style.display = "block";
     }
 
-    loadStudents();
+    function closeEdit() {
+      document.getElementById("editPopup").style.display = "none";
+    }
+
+    function saveEdit() {
+      if (selectedIndex !== null) {
+        students[selectedIndex].name = document.getElementById("editName").value;
+        students[selectedIndex].phone = document.getElementById("editPhone").value;
+        students[selectedIndex].day = document.getElementById("editDay").value;
+        students[selectedIndex].totalFee = document.getElementById("editTotalFee").value;
+        students[selectedIndex].initialPayment = document.getElementById("editInitialPayment").value;
+        localStorage.setItem('students', JSON.stringify(students));
+        displayStudents();
+        closeEdit();
+      }
+    }
+
+    function deleteStudent(index) {
+      if (confirm("Are you sure you want to delete this student?")) {
+        students.splice(index, 1);
+        localStorage.setItem('students', JSON.stringify(students));
+        displayStudents();
+      }
+    }
+
+    displayStudents();
   </script>
 </body>
 </html>

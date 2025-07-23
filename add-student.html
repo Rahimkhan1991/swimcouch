@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Add Student</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -18,12 +18,12 @@
     }
 
     form {
-      background: #fff;
+      background: white;
       padding: 20px;
       border-radius: 12px;
-      max-width: 600px;
+      max-width: 500px;
       margin: auto;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
     }
 
     label {
@@ -32,13 +32,12 @@
       font-weight: bold;
     }
 
-    input, select, textarea {
+    input, select {
       width: 100%;
       padding: 10px;
       margin-top: 6px;
       border-radius: 6px;
       border: 1px solid #ccc;
-      font-size: 16px;
     }
 
     button {
@@ -56,52 +55,56 @@
     button:hover {
       background: #0056b3;
     }
-
-    @media (max-width: 600px) {
-      body {
-        padding: 10px;
-      }
-      form {
-        padding: 15px;
-      }
-    }
   </style>
 </head>
 <body>
   <h2>Add New Student</h2>
+  <form id="studentForm">
+    <label for="name">Student Name</label>
+    <input type="text" id="name" required>
+
+    <label for="phone">Phone Number</label>
+    <input type="tel" id="phone" required>
+
+    <label for="day">Class Day</label>
+    <select id="day" required>
+      <option value="">Select</option>
+      <option>Monday</option>
+      <option>Wednesday</option>
+      <option>Friday</option>
+      <option>Saturday</option>
+    </select>
+
+    <label for="fee">Fee Amount</label>
+    <input type="number" id="fee" required>
+
+    <label for="joinDate">Join Date</label>
+    <input type="date" id="joinDate">
+
+    <button type="submit">Save Student</button>
+  </form>
 
   <script>
-  function saveStudent(event) {
-    event.preventDefault();
-
-    const student = {
-      name: document.getElementById("name").value.trim(),
-      phone: document.getElementById("phone").value.trim(),
-      age: document.getElementById("age").value.trim(),
-      gender: document.getElementById("gender").value,
-      day: document.getElementById("day").value,
-      time: document.getElementById("time").value.trim(),
-      fee: document.getElementById("fee").value.trim(),
-      remarks: document.getElementById("remarks").value.trim(),
-      status: "Pending" // Default fee status
-    };
-
-    let students = JSON.parse(localStorage.getItem("students") || "[]");
-    students.push(student);
-    localStorage.setItem("students", JSON.stringify(students));
-
-    alert("Student added successfully!");
-    window.location.href = "view-students.html";
-  }
-</script>
-
-
-  <script>
-    function saveStudent(e) {
+    const form = document.getElementById('studentForm');
+    form.addEventListener('submit', function (e) {
       e.preventDefault();
-      alert("Saving student... (Connect this with your backend)");
-      // Add your fetch() or Apps Script integration here
-    }
+
+      const student = {
+        name: document.getElementById('name').value.trim(),
+        phone: document.getElementById('phone').value.trim(),
+        day: document.getElementById('day').value,
+        fee: document.getElementById('fee').value.trim(),
+        joinDate: document.getElementById('joinDate').value
+      };
+
+      // Load existing students
+      let students = JSON.parse(localStorage.getItem('students')) || [];
+      students.push(student);
+      localStorage.setItem('students', JSON.stringify(students));
+
+      alert("Student added successfully!");
+      form.reset();
+    });
   </script>
 </body>
 </html>

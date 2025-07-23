@@ -57,52 +57,53 @@
   </div>
 
   <script>
-    // Load finance summary
-    function loadFinanceSummary() {
-      try {
-        const fees = JSON.parse(localStorage.getItem("fees") || []);
-        const students = JSON.parse(localStorage.getItem("students") || []);
+  function loadFinanceSummary() {
+    try {
+      const feesRaw = localStorage.getItem("fees");
+      const studentsRaw = localStorage.getItem("students");
 
-        const today = new Date().toISOString().split("T")[0];
-        const now = new Date();
-        const startOfWeek = new Date(now.setDate(now.getDate() - now.getDay()));
-        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      const fees = feesRaw ? JSON.parse(feesRaw) : [];
+      const students = studentsRaw ? JSON.parse(studentsRaw) : [];
 
-        let todayTotal = 0, weekTotal = 0, monthTotal = 0;
-        let totalPaidAmount = 0;
-        let totalBalance = 0;
+      const today = new Date().toISOString().split("T")[0];
+      const now = new Date();
 
-        // Calculate from fees
-        fees.forEach(fee => {
-          const feeDate = new Date(fee.feeDate);
-          const amount = Number(fee.amount) || 0;
+      const startOfWeek = new Date();
+      startOfWeek.setDate(now.getDate() - now.getDay());
+      startOfWeek.setHours(0, 0, 0, 0);
 
-          if (fee.feeDate === today) todayTotal += amount;
-          if (feeDate >= startOfWeek) weekTotal += amount;
-          if (feeDate >= startOfMonth) monthTotal += amount;
-        });
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
-        // Calculate from students
-        students.forEach(student => {
-          totalPaidAmount += Number(student.paidAmount) || 0;
-          totalBalance += Number(student.balance) || 0;
-        });
+      let todayTotal = 0, weekTotal = 0, monthTotal = 0;
+      let totalPaidAmount = 0;
+      let totalBalance = 0;
 
-        // Update DOM
-        document.getElementById("todayIncome").textContent = `Rp${todayTotal}`;
-        document.getElementById("weekIncome").textContent = `Rp${weekTotal}`;
-        document.getElementById("monthIncome").textContent = `Rp${monthTotal}`;
-        document.getElementById("totalPaid").textContent = `Rp${totalPaidAmount}`;
-        document.getElementById("totalBalance").textContent = `Rp${totalBalance}`;
-      } catch (e) {
-        console.error("Error loading finance:", e);
-      }
+      fees.forEach(fee => {
+        const feeDate = new Date(fee.feeDate);
+        const amount = Number(fee.amount) || 0;
+
+        if (fee.feeDate === today) todayTotal += amount;
+        if (feeDate >= startOfWeek) weekTotal += amount;
+        if (feeDate >= startOfMonth) monthTotal += amount;
+      });
+
+      students.forEach(student => {
+        totalPaidAmount += Number(student.paidAmount) || 0;
+        totalBalance += Number(student.balance) || 0;
+      });
+
+      document.getElementById("todayIncome").textContent = `Rp${todayTotal}`;
+      document.getElementById("weekIncome").textContent = `Rp${weekTotal}`;
+      document.getElementById("monthIncome").textContent = `Rp${monthTotal}`;
+      document.getElementById("totalPaid").textContent = `Rp${totalPaidAmount}`;
+      document.getElementById("totalBalance").textContent = `Rp${totalBalance}`;
+    } catch (e) {
+      console.error("Error loading finance:", e);
     }
+  }
 
-    // Initialize
-    window.onload = () => {
-      loadFinanceSummary();
-    };
-  </script>
+  window.onload = loadFinanceSummary;
+</script>
+
 </body>
 </html>

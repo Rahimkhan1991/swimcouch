@@ -1,81 +1,9 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>Attendance</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 10px;
-      padding: 0;
-      background-color: #f5f5f5;
-    }
+<body style="background-color: #f2f4f8; font-family: 'Segoe UI', sans-serif; margin: 0; padding: 20px;">
+  <h2 style="text-align: center; color: #007bff;">Student Attendance</h2>
 
-    h2 {
-      text-align: center;
-      color: #007bff;
-      margin-bottom: 15px;
-    }
-
-    .filter-container {
-      display: flex;
-      justify-content: center;
-      margin-bottom: 15px;
-    }
-
-    select {
-      padding: 8px;
-      border-radius: 5px;
-      border: 1px solid #ccc;
-      width: 100%;
-      max-width: 300px;
-    }
-
-    #attendanceList {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      padding: 0 10px;
-    }
-
-    .student-row {
-      background-color: #fff;
-      padding: 12px;
-      border-radius: 8px;
-      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-
-    .student-row label {
-      flex: 1;
-      margin-left: 10px;
-    }
-
-    input[type="checkbox"] {
-      transform: scale(1.2);
-    }
-
-    @media (max-width: 600px) {
-      .student-row {
-        font-size: 14px;
-        padding: 10px;
-      }
-
-      select {
-        font-size: 14px;
-      }
-    }
-  </style>
-</head>
-<body>
-  <h2>Student Attendance</h2>
-
-  <div class="filter-container">
-    <select id="dayFilter">
-      <option value="all">All Days</option>
+  <div style="display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; margin-bottom: 20px;">
+    <select id="dayFilter" onchange="loadStudentsByDay()" style="padding: 10px; font-size: 16px;">
+      <option value="All">All Days</option>
       <option value="Monday">Monday</option>
       <option value="Tuesday">Tuesday</option>
       <option value="Wednesday">Wednesday</option>
@@ -84,34 +12,115 @@
       <option value="Saturday">Saturday</option>
       <option value="Sunday">Sunday</option>
     </select>
+
+    <input type="date" id="attendanceDate" style="padding: 10px; font-size: 16px;"/>
+
+    <label style="display: flex; align-items: center; gap: 5px; background: #28a745; color: white; padding: 10px; border-radius: 5px; cursor: pointer;">
+      <input type="checkbox" id="markAll" onclick="toggleMarkAll()" style="transform: scale(1.2);" />
+      Mark All Present
+    </label>
+
+    <button onclick="saveAttendance()" style="background-color: #007bff; color: white; padding: 10px 15px; border: none; border-radius: 5px; cursor: pointer;">
+      💾 Save Attendance
+    </button>
   </div>
 
-  <div id="attendanceList"></div>
+  <div id="studentList" style="max-width: 600px; margin: auto;"></div>
 
   <script>
-    document.addEventListener("DOMContentLoaded", () => {
-      loadAttendanceList();
-      document.getElementById("dayFilter").addEventListener("change", loadAttendanceList);
-    });
+    let students = [];
 
-    function loadAttendanceList() {
-      const students = JSON.parse(localStorage.getItem("students")) || [];
-      const selectedDay = document.getElementById("dayFilter").value;
-      const listContainer = document.getElementById("attendanceList");
-      listContainer.innerHTML = "";
+    function setDefaultDate() {
+      const today = new Date().toISOString().split("T")[0];
+      document.getElementById("attendanceDate").value = today;
+    }
 
-      students.forEach((student, index) => {
-        if (selectedDay === "all" || student.day === selectedDay) {
-          const row = document.createElement("div");
-          row.className = "student-row";
-          row.innerHTML = `
-            <input type="checkbox" id="attend-${index}">
-            <label for="attend-${index}">${student.name} (${student.day})</label>
-          `;
-          listContainer.appendChild(row);
-        }
+    function loadStudents() {
+      students = JSON.parse(localStorage.getItem("students") || "[]");
+      loadStudentsByDay();
+    }
+
+    function loadStudentsByDay() {
+      const day = document.getElementById("dayFilter").value;
+      const list = document.getElementById("studentList");
+      list.innerHTML = "";
+
+      let filtered;
+      if (day === "All") {
+        filtered = students;
+      } else {
+        filtered = students.filter(s => {
+          if (Array.isArray(s.days)) {
+            return s.days.includes(day);
+          }
+          return s.day === day;
+        });
+      }
+
+      if (filtered.length === 0) {
+        list.innerHTML = "<p style='text-align:center;'>No students found for selected day.</p>";
+        return;
+      }
+
+      filtered.forEach(student => {
+        const div = document.createElement("div");
+        div.style = "background: #fff; margin-bottom: 10px; padding: 10px 15px; display: flex; align-items: center; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.05);";
+
+        const image = student.image 
+          ? `<img src="${student.image}" alt="${student.name}" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; margin-right: 15px;">`
+          : `<div style="width: 40px; height: 40px; border-radius: 50%; background: #ccc; margin-right: 15px; display: flex; align-items: center; justify-content: center;">👤</div>`;
+
+        div.innerHTML = `
+          ${image}
+          <label style="flex:1;">${student.name} (${student.day || "N/A"})</label>
+          <input type="checkbox" id="student-${student.id}" style="transform: scale(1.3);" />
+        `;
+
+        list.appendChild(div);
       });
     }
+
+    function toggleMarkAll() {
+      const check = document.getElementById("markAll").checked;
+      students.forEach(student => {
+        const cb = document.getElementById(`student-${student.id}`);
+        if (cb) cb.checked = check;
+      });
+    }
+
+    function saveAttendance() {
+      const date = document.getElementById("attendanceDate").value;
+      if (!date) {
+        alert("Please select a date.");
+        return;
+      }
+
+      const attendance = JSON.parse(localStorage.getItem("attendance") || "[]");
+      const day = document.getElementById("dayFilter").value;
+
+      let filtered = (day === "All") ? students : students.filter(s => {
+        if (Array.isArray(s.days)) {
+          return s.days.includes(day);
+        }
+        return s.day === day;
+      });
+
+      filtered.forEach(student => {
+        const checkbox = document.getElementById(`student-${student.id}`);
+        if (!checkbox) return;
+        attendance.push({
+          studentId: student.id,
+          name: student.name,
+          date: date,
+          status: checkbox.checked ? "Present" : "Absent"
+        });
+      });
+
+      localStorage.setItem("attendance", JSON.stringify(attendance));
+      alert("✅ Attendance saved!");
+    }
+
+    setDefaultDate();
+    loadStudents();
   </script>
 </body>
-</html>

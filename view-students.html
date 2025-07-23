@@ -143,35 +143,38 @@
       const list = document.getElementById("studentList");
       list.innerHTML = "";
 
-      const students = JSON.parse(localStorage.getItem("students") || "[]");
+     const students = JSON.parse(localStorage.getItem('students') || '[]');
+const feeRecords = JSON.parse(localStorage.getItem('feeRecords') || '[]');
 
-      students.forEach((student, index) => {
-        const card = document.createElement("div");
-        card.className = "student-card";
-        card.onclick = () => showPopup(index);
+students.forEach((student, index) => {
+  const totalFee = parseFloat(student.totalFee || 0);
+  const initialPayment = parseFloat(student.initialPayment || 0);
 
-        const photo = document.createElement("img");
-        photo.src = student.image || ""; // ✅ fixed from student.photo
-        photo.className = "student-photo";
+  // Sum all additional fee payments for this student
+  const additionalPayments = feeRecords
+    .filter(fee => fee.name === student.name && fee.amount)
+    .reduce((sum, fee) => sum + parseFloat(fee.amount), 0);
 
-        const details = document.createElement("div");
-        details.className = "student-details";
-        const pending = (student.totalFee || 0) - (student.initialPayment || 0);
-        details.innerHTML = `
-          <strong>${student.name}</strong>
-          <span>Phone: ${student.phone || "-"}</span>
-          <span>Total Fee: ₹${student.totalFee || 0}</span>
-          <span>Pending: ₹${pending >= 0 ? pending : 0}</span>
-        `;
+  const totalPaid = initialPayment + additionalPayments;
+  const pendingFee = totalFee - totalPaid;
 
-        const info = document.createElement("div");
-        info.className = "student-info";
-        info.appendChild(photo);
-        info.appendChild(details);
+  // Now create the card and show totalPaid and pendingFee
+  const card = document.createElement("div");
+  card.className = "student-card";
+  card.innerHTML = `
+    <img src="${student.photo || ''}" alt="Student Photo" class="student-img">
+    <h3>${student.name}</h3>
+    <p>Phone: ${student.phone}</p>
+    <p>Day: ${student.day}</p>
+    <p>Total Fee: ${totalFee}</p>
+    <p style="color: green;">Paid: ${totalPaid}</p>
+    <p style="color: ${pendingFee > 0 ? 'red' : 'green'};">Pending: ${pendingFee}</p>
+    <button onclick="editStudent(${index})">Edit</button>
+    <button onclick="deleteStudent(${index})">Delete</button>
+  `;
+  container.appendChild(card);
+});
 
-        card.appendChild(info);
-        list.appendChild(card);
-      });
     }
 
     function showPopup(index) {

@@ -89,7 +89,8 @@
 
     function loadFinanceSummary() {
       try {
-        const fees = JSON.parse(localStorage.getItem("fees") || "[]");
+        const feeRaw = localStorage.getItem("fees");
+        const fees = feeRaw ? JSON.parse(feeRaw) : [];
         const students = JSON.parse(localStorage.getItem("students") || "[]");
 
         const filter = document.getElementById("filter").value;

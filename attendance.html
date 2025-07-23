@@ -236,5 +236,33 @@
     // Initial load
     loadStudents();
   </script>
+<script>
+  function saveAttendance() {
+  const date = document.getElementById('attendanceDate').value;
+  const checkboxes = document.querySelectorAll('.mark-present');
+  
+  // Get existing attendance
+  let attendance = JSON.parse(localStorage.getItem('attendance')) || [];
+  
+  // Remove existing entries for this date
+  attendance = attendance.filter(item => item.date !== date);
+  
+  // Add new entries
+  checkboxes.forEach(checkbox => {
+    if (checkbox.checked) {
+      attendance.push({
+        date: date,
+        studentId: checkbox.dataset.id,
+        studentName: checkbox.dataset.name, // Add student name for easier reporting
+        status: 'Present',
+        timestamp: new Date().toISOString() // Add timestamp for sorting
+      });
+    }
+  });
+  
+  localStorage.setItem('attendance', JSON.stringify(attendance));
+  showMessage('Attendance saved successfully!');
+}
+</script>
 </body>
 </html>

@@ -238,5 +238,44 @@
       loadFinanceSummary();
     };
   </script>
+  <script>
+  function showAttendanceHistory() {
+  const selectedStudentName = document.getElementById("studentDropdown").value;
+  if (!selectedStudentName) return;
+
+  // Get ALL attendance records
+  const allAttendance = JSON.parse(localStorage.getItem("attendance")) || [];
+  
+  // Find the student to get their ID
+  const students = JSON.parse(localStorage.getItem("students")) || [];
+  const student = students.find(s => s.name === selectedStudentName);
+  
+  if (!student) return;
+
+  // Filter attendance by student ID OR name (for backward compatibility)
+  const studentAttendance = allAttendance.filter(a => 
+    a.studentId === student.id || a.studentName === student.name
+  );
+
+  // Display the records
+  let html = `<div class="student-info">
+    <h3>${student.name}'s Attendance</h3>
+    <p>Total Classes Attended: ${studentAttendance.length}</p>
+    <ul>`;
+  
+  studentAttendance.forEach(record => {
+    html += `<li>${formatDate(record.date)} - ${record.status}</li>`;
+  });
+  
+  html += `</ul></div>`;
+  document.getElementById("attendanceResult").innerHTML = html;
+}
+
+// Helper function to format date
+function formatDate(dateString) {
+  const options = { year: 'numeric', month: 'short', day: 'numeric' };
+  return new Date(dateString).toLocaleDateString(undefined, options);
+}
+</script>
 </body>
 </html>
